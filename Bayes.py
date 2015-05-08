@@ -90,7 +90,10 @@ def getAccuracy(testSet, predictions):
 				falsiPositivi+=1
 			elif testSet[i][-1]==0 and predictions[i]==1:
 				falsiNegativi+=1
-	return (correct/float(len(testSet))) * 100.0 , falsiPositivi, falsiNegativi
+
+	falsiPositivi/len(testSet) * 100
+
+	return (correct/float(len(testSet))) * 100.0 , str(falsiPositivi) + " on "+ str(len(testSet))+ " "+str(falsiPositivi/len(testSet) * 100), str(falsiNegativi) + " on "+str(len(testSet)) +" "+ str(falsiNegativi/len(testSet) * 100)
 
 def main():
 	filename = 'data.csv'
@@ -104,7 +107,7 @@ def main():
 	predictions = getPredictions(summaries, testSet)
 	accuracy,falsiPositivi,falsiNegativi = getAccuracy(testSet, predictions)
 	print('Accuracy: {0}%'.format(accuracy))
-	print('Falsi Positivi: {0}'.format(falsiPositivi))
-	print('Falsi Negativi: {0}'.format(falsiNegativi))
+	print('Falsi Positivi: {0}%'.format(falsiPositivi))
+	print('Falsi Negativi: {0}%'.format(falsiNegativi))
 
 main()
