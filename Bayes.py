@@ -24,7 +24,7 @@ def separateByClass(dataset):
 	for i in range(len(dataset)):
 		vector = dataset[i]
 		if (vector[-1] not in separated):
-			separated[vector[-1]] = [] # -1 l'ultimo attributo è quello su cui voglio fare previsione
+			separated[vector[-1]] = [] # -1 l'ultimo attributo e quello su cui voglio fare previsione
 		separated[vector[-1]].append(vector)
 	return separated
 
