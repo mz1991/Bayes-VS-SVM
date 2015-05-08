@@ -2,6 +2,8 @@
 import csv
 import random
 import math
+import itertools
+import random
 
 def loadCsv(filename):
 	lines = csv.reader(open(filename, "r"))
@@ -10,7 +12,7 @@ def loadCsv(filename):
 		dataset[i] = [float(x) for x in dataset[i]]
 	return dataset
 
-def splitDataset(dataset, splitRatio):
+def subSamplingSplit(dataset,splitRatio):
 	trainSize = int(len(dataset) * splitRatio)
 	trainSet = []
 	copy = list(dataset)
@@ -18,6 +20,9 @@ def splitDataset(dataset, splitRatio):
 		index = random.randrange(len(copy))
 		trainSet.append(copy.pop(index))
 	return [trainSet, copy]
+
+def kFoldSplit(dataset,nFold):
+	return [list(b) for b in zip(*[iter(dataset)]*(len(dataset)//nFold))]
 
 def separateByClass(dataset):
 	separated = {}
@@ -29,11 +34,14 @@ def separateByClass(dataset):
 	return separated
 
 def mean(numbers):
-	return sum(numbers)/float(len(numbers))
+	#return sum(numbers)/float(len(numbers))
+	return sum([float(b) for b in numbers])/float(len(numbers))
 
 def stdev(numbers):
 	avg = mean(numbers)
-	variance = sum([pow(x-avg,2) for x in numbers])/float(len(numbers)-1)
+	#variance = sum([pow(x-avg,2) for x in numbers])/float(len(numbers)-1)
+	toInt=([float(b) for b in numbers])
+	variance = sum([pow(x-avg,2) for x in toInt])/float(len(numbers)-1)
 	return math.sqrt(variance)
 
 def summarize(dataset):
@@ -49,7 +57,8 @@ def summarizeByClass(dataset):
 	return summaries
 
 def calculateProbability(x, mean, stdev):
-	exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
+	#exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
+	exponent = math.exp(-(math.pow(float(x)-mean,2)/(2*math.pow(stdev,2))))
 	return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
 
 def calculateClassProbabilities(summaries, inputVector):
@@ -87,31 +96,22 @@ def getAccuracy(testSet, predictions):
 	for i in range(len(testSet)):
 		if testSet[i][-1] == predictions[i]:
 			correct += 1
-			if predictions[i] == 0:
+			if predictions[i] == "0":
 				veriNegativi+=1
 			else:
 				veriPositivi+=1
 		else:
-			if testSet[i][-1]==1 and predictions[i]==0:
+			if testSet[i][-1]=="1" and predictions[i]=="0":
 				falsiPositivi+=1
-			elif testSet[i][-1]==0 and predictions[i]==1:
+			elif testSet[i][-1]=="0" and predictions[i]=="1":
 				falsiNegativi+=1
 
 	falsiPositivi/len(testSet) * 100
 
 	return (correct/float(len(testSet))) * 100.0 ,falsiPositivi,falsiNegativi,veriPositivi,veriNegativi
 
-def runValidation(splitRatio):
-	#filename = 'winequality-red.csv'
-	#dataset: https://archive.ics.uci.edu/ml/index.html
-	filename = 'data.csv'
-	dataset = loadCsv(filename)
+def bayesClassification(dataset,trainingSet,testSet):
 	
-	#http://en.wikipedia.org/wiki/Cross-validation_(statistics)#Repeated_random_sub-sampling_validation
-	#Utilizzo metodo Random SUb-Sampling validation
-	trainingSet, testSet = splitDataset(dataset, splitRatio)
-
-
 	print('Split {0} rows into train={1} and test={2} rows'.format(len(dataset), len(trainingSet), len(testSet)))
 	# prepare model
 	summaries = summarizeByClass(trainingSet)
@@ -129,28 +129,41 @@ def runValidation(splitRatio):
 	print('Specificita: {0}'.format(veriNegativi/float(falsiPositivi+veriNegativi)))
 	return accuracy
 
+
 def main():
-	totAccuracy=0
-	totAccuracy+=runValidation(0.67)
-	print("--------------")
-	totAccuracy+=runValidation(0.70)
-	print("--------------")
-	totAccuracy+=runValidation(0.90)
-	print("--------------")
-	totAccuracy+=runValidation(0.80)
-	print("--------------")
-	totAccuracy+=runValidation(0.99)
-	print("--------------")
-	totAccuracy+=runValidation(0.10)
-	print("--------------")
-	totAccuracy+=runValidation(0.50)
-	print("--------------")
-	totAccuracy+=runValidation(0.40)
-	print("--------------")
-	totAccuracy+=runValidation(0.20)
-	print("--------------")
-	totAccuracy+=runValidation(0.65)
+	filename="data.csv"
+	kFoldSize=10
+	doShuffle = True
+	
+	lines = csv.reader(open(filename, "r"))
+	dataset = list(lines)
+	if doShuffle:
+		random.shuffle(dataset)
+	
+
+	# -- Start Sub Samplig Cross Validation
+	totAccuracySubSampling=0
+	splitRatioS=[0.67,0.90,0.80]
+	for splitRatio in splitRatioS:
+		trainingSet, testSet = subSamplingSplit(dataset,splitRatio)
+		totAccuracySubSampling+=bayesClassification(dataset,trainingSet,testSet)
+		print("--------------")
+	
+	totAccuracyKFold=0
+	folds=kFoldSplit(dataset,kFoldSize)	
+	for index,fold in enumerate(folds):
+		testSet = fold
+		copy = folds[:]
+		del copy[index]
+		trainingSet = list(itertools.chain(*copy))
+		totAccuracyKFold+=bayesClassification(dataset,trainingSet,testSet)
+		print("--------------")
+
 	print("*************************************")
-	print("Accuracy Mean {0}%".format(totAccuracy/float(10)))
+	print("Accuracy Mean with subSampling {0}%".format(totAccuracySubSampling/float(len(splitRatioS))))
+	print("*************************************")
+
+	print("*************************************")
+	print("Accuracy Mean With K-Fold {0}%".format(totAccuracyKFold/float(10)))
 	print("*************************************")
 main()
