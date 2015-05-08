@@ -93,7 +93,7 @@ def getAccuracy(testSet, predictions):
 
 	falsiPositivi/len(testSet) * 100
 
-	return (correct/float(len(testSet))) * 100.0 , str(falsiPositivi) + " on "+ str(len(testSet))+ " "+str(falsiPositivi/len(testSet) * 100), str(falsiNegativi) + " on "+str(len(testSet)) +" "+ str(falsiNegativi/len(testSet) * 100)
+	return (correct/float(len(testSet))) * 100.0 , str(falsiPositivi) + " on "+ str(len(testSet))+ " "+str(falsiPositivi/float(len(testSet)) * 100), str(falsiNegativi) + " on "+str(len(testSet)) +" "+ str(falsiNegativi/float(len(testSet)) * 100)
 
 def main():
 	filename = 'data.csv'
