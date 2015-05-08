@@ -53,9 +53,9 @@ class Model:
                                 print("classifier: " + self.Classify(vector) + " given " + vector[len(vector) - 1])
                                 if self.Classify(vector) == vector[len(vector) - 1]:
                                     self.corrects+=1
-                                elif self.Classify(vector)=="1" and vector[len(vector) - 1]=="2":
-                                    self.falsoPositivo+=1
                                 elif self.Classify(vector)=="2" and vector[len(vector) - 1]=="1":
+                                    self.falsoPositivo+=1
+                                elif self.Classify(vector)=="1" and vector[len(vector) - 1]=="2":
                                     self.falsoNegativo+=1
                                     
 
