@@ -131,7 +131,7 @@ def bayesClassification(dataset,trainingSet,testSet):
 
 
 def main():
-	filename="data.csv"
+	filename="bigDataset.csv"
 	kFoldSize=10
 	doShuffle = True
 	
@@ -143,8 +143,9 @@ def main():
 
 	# -- Start Sub Samplig Cross Validation
 	totAccuracySubSampling=0
-	splitRatioS=[0.67,0.90,0.80]
-	for splitRatio in splitRatioS:
+	splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
+	for index,splitRatio in enumerate(splitRatioS):
+		print("Index {0} split ration {1}".format(index,splitRatio))
 		trainingSet, testSet = subSamplingSplit(dataset,splitRatio)
 		totAccuracySubSampling+=bayesClassification(dataset,trainingSet,testSet)
 		print("--------------")
@@ -152,6 +153,7 @@ def main():
 	totAccuracyKFold=0
 	folds=kFoldSplit(dataset,kFoldSize)	
 	for index,fold in enumerate(folds):
+		print("Index {0} split K-Fold {1}".format(index,kFoldSize))
 		testSet = fold
 		copy = folds[:]
 		del copy[index]
@@ -164,6 +166,6 @@ def main():
 	print("*************************************")
 
 	print("*************************************")
-	print("Accuracy Mean With K-Fold {0}%".format(totAccuracyKFold/float(10)))
+	print("Accuracy Mean With K-Fold {0}%".format(totAccuracyKFold/float(kFoldSize)))
 	print("*************************************")
 main()
