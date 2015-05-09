@@ -133,6 +133,16 @@ def bayesClassification(dataset,trainingSet,testSet):
 		print('Specificita: {0}'.format(veriNegativi/float(falsiPositivi+veriNegativi)))
 	else:
 		print('Specificita: division by zero')
+	if veriPositivi+falsiPositivi>0:
+		print('Positive Predicted value: {0}'.format(veriPositivi/float(veriPositivi+falsiPositivi)))
+	else:
+		print('Positive Predicted value: division by zero')
+	if veriNegativi+falsiNegativi>0:
+		print('Negative Predicted value: {0}'.format(veriNegativi/float(veriNegativi+falsiNegativi)))
+	else:
+		print('Negative Predicted value: division by zero')
+	print('BAC (Balanced ACcuracy): {0}'.format((veriPositivi/float(veriPositivi+falsiNegativi)+veriNegativi/float(falsiPositivi+veriNegativi))/2))
+
 	return accuracy
 
 
