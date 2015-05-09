@@ -125,8 +125,14 @@ def bayesClassification(dataset,trainingSet,testSet):
 	print('Veri Negativi: {0}'.format(veriNegativi))
 	#sensitivita: veripositivi / (veripositivi + falsi negativi)
 	#specificita:  verinegativi / (falsi positivi + veri negativi)
-	print('Sensitivita: {0}'.format(veriPositivi/float(veriPositivi+falsiNegativi)))
-	print('Specificita: {0}'.format(veriNegativi/float(falsiPositivi+veriNegativi)))
+	if veriPositivi+falsiNegativi >0:
+		print('Sensitivita: {0}'.format(veriPositivi/float(veriPositivi+falsiNegativi)))
+	else:
+		print('Sensitivita: division by zero')
+	if falsiPositivi+veriNegativi >0:
+		print('Specificita: {0}'.format(veriNegativi/float(falsiPositivi+veriNegativi)))
+	else:
+		print('Specificita: division by zero')
 	return accuracy
 
 
@@ -140,6 +146,13 @@ def main():
 	if doShuffle:
 		random.shuffle(dataset)
 	
+	#position of the attribute to remove ( zero - based!)
+	#column in the original dataset
+	attributeToRemove=[2]
+	for dataSetRow in dataset:
+		for index,attIndex in enumerate(attributeToRemove):
+			# rimuovo attrIndex - index per evitare outOf Bound exception
+			del dataSetRow[attIndex-index]
 
 	# -- Start Sub Samplig Cross Validation
 	totAccuracySubSampling=0
