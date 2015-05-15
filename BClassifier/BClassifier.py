@@ -86,8 +86,9 @@ def Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,typ
 			denNaive=1
 			for index,columnHeader in enumerate(attrValuesCopy):
 				denNaive*= prior[columnHeader+"="+newLine[index]]
-			probMenoUno = probMenoUno / denNaive
-			probUno = probUno / denNaive
+			sum = probMenoUno+probUno
+			probMenoUno = (probMenoUno*prior["Result=-1"]) / sum
+			probUno = (probUno*prior["Result=1"]) / sum
 		if (probMenoUno+probUno)!=0:
 			alfa =1/(probMenoUno+probUno)
 		else:
@@ -123,6 +124,25 @@ def VerifyPrediction(testSet,predictionDict):
 			predictionWrong+=1
 	return (predictionRight/float(len(testSet)) )*100
 
+def GetTypeError(testSet,predictionDict):
+	# per valida si intende: e un sito di phishing (cioe rispondo alla domanda: "il sito e di phishing")
+	# sito phishing = 1
+	# sito non phishing = -1
+	falsiPositivi =0	# ipotesi valida, rifiutata
+	falsiNegativi =0	# ipotesi sbagliata accettata
+	veriPositivi  =0	# ipotesi valida accettata
+	veriNegativi  =0	# ipotesi sbagliata rifiutata
+	for index,line in enumerate(testSet):
+		if (str(line[-1])=="1") and (str(predictionDict[index])=="1"):
+			veriNegativi+=1
+		if (str(line[-1])=="-1") and (str(predictionDict[index])=="-1"):
+			veriPositivi+=1
+		if (str(line[-1])=="1") and (str(predictionDict[index])=="-1"):
+			falsiPositivi+=1
+		if (str(line[-1])=="-1") and (str(predictionDict[index])=="1"):
+			falsiNegativi+=1
+	return falsiPositivi,falsiNegativi,veriPositivi,veriNegativi
+
 def KFoldSplit(dataset,nFold):
 	return [list(b) for b in zip(*[iter(dataset)]*(len(dataset)//nFold))]
 
@@ -135,7 +155,6 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	probabilitaPrior={}
 	for index,attribute in enumerate(attrValues):
 		GetPrior(attrValues[attribute],trainingSet,index,attribute,probabilitaPrior)
-
 
 	#	Learn
 	#	Calcolo della probabilita condizionata
@@ -162,20 +181,42 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	#	HMAP = max [ P(attribute = value| Result=1)* P(Result=1) , P(attribute = value|Result=-1)* P(Result=-1) ]
 	predictionDict=Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,"MAP",probabilitaPrior)
 	hMAPPrediction=VerifyPrediction(testSet,predictionDict)
+	hMAPfalsiPositivi,hMAPfalsiNegativi,hMAPveriPositivi,hMAPveriNegativi = GetTypeError(testSet,predictionDict)
+	
 	print("HMAP prediction accuracy {0} %".format(hMAPPrediction))
+	print("HMAP falsi positivi {0} of {1}".format(hMAPfalsiPositivi,len(testSet)))
+	print("HMAP falsi negativi {0} of {1}".format(hMAPfalsiNegativi,len(testSet)))
+	print("HMAP veri positivi {0} of {1}".format(hMAPveriPositivi,len(testSet)))
+	print("HMAP veri negativo {0} of {1}".format(hMAPveriNegativi,len(testSet)))
+	print("HMAP sensitivita {0}".format(hMAPveriPositivi/(hMAPveriPositivi+hMAPfalsiNegativi)))
+	print("HMAP specificita {0}".format(hMAPveriNegativi/(hMAPfalsiPositivi+hMAPveriNegativi)))
 
 	#	ML
 	#	ML = max [ P(attribute = value|Result=1) , P(attribute = value|Result=-1) ] 
 	predictionDict=Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,"ML",probabilitaPrior)
 	MLPrediction=VerifyPrediction(testSet,predictionDict)
-	print("ML prediction accuracy {0} %".format(MLPrediction))
+	MLfalsiPositivi,MLfalsiNegativi,MLveriPositivi,MLveriNegativi = GetTypeError(testSet,predictionDict)
 
+	print("ML prediction accuracy {0} %".format(MLPrediction))
+	print("ML falsi positivi {0} of {1}".format(MLfalsiPositivi,len(testSet)))
+	print("ML falsi negativi {0} of {1}".format(MLfalsiNegativi,len(testSet)))
+	print("ML veri positivi {0} of {1}".format(MLveriPositivi,len(testSet)))
+	print("ML veri negativo {0} of {1}".format(MLveriNegativi,len(testSet)))
+	print("ML sensitivita {0}".format(MLveriPositivi/(MLveriPositivi+MLfalsiNegativi)))
+	print("ML specificita {0}".format(MLveriNegativi/(MLfalsiPositivi+MLveriNegativi)))
 	#	NAIVE
 	#	NAIVE = max = [ (P(attribute = value|Result=1)* P(Result=1)) / P(attribute = value) , (P(attribute = value|Result=-1)* P(Result=-1)) / P(attribute = value) ]
 	predictionDict=Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,"NAIVE",probabilitaPrior)
 	NAIVEPrediction=VerifyPrediction(testSet,predictionDict)
-	print("NAIVE prediction accuracy {0} %".format(NAIVEPrediction))
+	NAIVEfalsiPositivi,NAIVEfalsiNegativi,NAIVEveriPositivi,NAIVEveriNegativi = GetTypeError(testSet,predictionDict)
 	
+	print("NAIVE prediction accuracy {0} %".format(NAIVEPrediction))
+	print("NAIVE falsi positivi {0} of {1}".format(NAIVEfalsiPositivi,len(testSet)))
+	print("NAIVE falsi negativi {0} of {1}".format(NAIVEfalsiNegativi,len(testSet)))
+	print("NAIVE veri positivi {0} of {1}".format(NAIVEveriPositivi,len(testSet)))
+	print("NAIVE veri negativo {0} of {1}".format(NAIVEveriNegativi,len(testSet)))
+	print("NAIVE sensitivita {0}".format(NAIVEveriPositivi/(NAIVEveriPositivi+NAIVEfalsiNegativi)))
+	print("NAIVE specificita {0}".format(NAIVEveriNegativi/(NAIVEfalsiPositivi+NAIVEveriNegativi)))
 	return hMAPPrediction,MLPrediction,NAIVEPrediction
 
 
@@ -183,65 +224,75 @@ def main():
 	filename="phi.arff"
 	doShuffle = True
 	kFoldSize=10
-	#if doShuffle:
-	#	random.shuffle(dataset)
 	
+	doSubSampling = True
+	doKFolding = True	
+
 	file = open(filename, 'r')
 	
 	# return the dataset line and the attributes dictionary (value and classes)
 	attrValues,dataSet=GetAttributeValues(file)
 	
+	columnHeader=[]
+	for header in attrValues:
+		columnHeader.append(header)	
+
 	# mischia il dataset
 	if doShuffle:
 		random.shuffle(dataSet)
 
 	#indice attributi da rimuovere nel dataset (viene rimossa l'intera colonna)
-	attributeToRemove=[]
+	attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
 	for dataSetRow in dataSet:
 		for index,attIndex in enumerate(attributeToRemove):
 			# rimuovo attrIndex - index per evitare outOf Bound exception
 			del dataSetRow[attIndex-index]
+	#rimuovere anche gli attributi (header delle colonne)
+	for index,idx in enumerate(attributeToRemove):
+		del attrValues[columnHeader[index]]
 	
-	hMAPsubsampling = 0
-	MLsubsampling = 0
-	NAIVEsubsampling = 0
+
+	if doSubSampling:
+		hMAPsubsampling = 0
+		MLsubsampling = 0
+		NAIVEsubsampling = 0
 	
-	splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
-	#splitRatioS=[]
-	#split dataSet to training set and test set
-	for index,splitRatio in enumerate(splitRatioS):
-		print("Index {0} split ration {1}".format(index,splitRatio))
-		trainingSet, testSet = SubSamplingSplit(dataSet,splitRatio)
-		hMAPPrediction,MLPrediction,NAIVEPrediction = BayesianClassifier(trainingSet,testSet,attrValues)
-		hMAPsubsampling+=hMAPPrediction
-		MLsubsampling+=MLPrediction
-		NAIVEsubsampling+=NAIVEPrediction
-		print("--------------")
+		splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
+		#splitRatioS=[]
+		#split dataSet to training set and test set
+		for index,splitRatio in enumerate(splitRatioS):
+			print("Index {0} split ration {1}".format(index,splitRatio))
+			trainingSet, testSet = SubSamplingSplit(dataSet,splitRatio)
+			hMAPPrediction,MLPrediction,NAIVEPrediction = BayesianClassifier(trainingSet,testSet,attrValues)
+			hMAPsubsampling+=hMAPPrediction
+			MLsubsampling+=MLPrediction
+			NAIVEsubsampling+=NAIVEPrediction
+			print("--------------")
 	
+		print("HMAP - subsampling avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
+		print("ML   - subsampling avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
+		print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
+
 	hMAPfold = 0
 	MLfold = 0
 	NAIVEfold = 0
 
-	folds=KFoldSplit(dataSet,kFoldSize)	
-	for index,fold in enumerate(folds):
-		print("Index {0} split K-Fold {1}".format(index,kFoldSize))
-		testSet = fold
-		copy = folds[:]
-		del copy[index]
-		trainingSet = list(itertools.chain(*copy))
-		hMAPPrediction,MLPrediction,NAIVEPrediction = BayesianClassifier(trainingSet,testSet,attrValues)
-		hMAPfold+=hMAPPrediction
-		MLfold+=MLPrediction
-		NAIVEfold+=NAIVEPrediction
-		print("--------------")
+	if doKFolding:
+		folds=KFoldSplit(dataSet,kFoldSize)	
+		for index,fold in enumerate(folds):
+			print("Index {0} split K-Fold {1}".format(index,kFoldSize))
+			testSet = fold
+			copy = folds[:]
+			del copy[index]
+			trainingSet = list(itertools.chain(*copy))
+			hMAPPrediction,MLPrediction,NAIVEPrediction = BayesianClassifier(trainingSet,testSet,attrValues)
+			hMAPfold+=hMAPPrediction
+			MLfold+=MLPrediction
+			NAIVEfold+=NAIVEPrediction
+			print("--------------")
 
-
-	print("HMAP - subsampling avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
-	print("ML   - subsampling avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
-	print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
-
-	print("HMAP - k-folding avarage: {0} %".format(hMAPfold/float(kFoldSize)))
-	print("ML   - k-folding avarage: {0} %".format(MLfold/float(kFoldSize)))
-	print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
+		print("HMAP - k-folding avarage: {0} %".format(hMAPfold/float(kFoldSize)))
+		print("ML   - k-folding avarage: {0} %".format(MLfold/float(kFoldSize)))
+		print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
 
 main()
