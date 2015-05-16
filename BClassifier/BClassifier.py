@@ -5,6 +5,7 @@ import math
 import itertools
 import random
 import collections
+import time
 
 def GetAttributeValues(file):
 	attrValues=collections.OrderedDict()
@@ -150,7 +151,7 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	#data set diviso in Classi (Result = 1 e Result = -1)
 	dataSetClassUno,dataSetClassMenoUno = GetClass(trainingSet)
 
-	#Priorità a priori (utilizzata nel denominatore di Bayes)
+	#Priorita a priori (utilizzata nel denominatore di Bayes)
 	#Calcolo P(ColumnHeader)
 	probabilitaPrior={}
 	for index,attribute in enumerate(attrValues):
@@ -183,13 +184,14 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	hMAPPrediction=VerifyPrediction(testSet,predictionDict)
 	hMAPfalsiPositivi,hMAPfalsiNegativi,hMAPveriPositivi,hMAPveriNegativi = GetTypeError(testSet,predictionDict)
 	
-	print("HMAP prediction accuracy {0} %".format(hMAPPrediction))
-	print("HMAP falsi positivi {0} of {1}".format(hMAPfalsiPositivi,len(testSet)))
-	print("HMAP falsi negativi {0} of {1}".format(hMAPfalsiNegativi,len(testSet)))
-	print("HMAP veri positivi {0} of {1}".format(hMAPveriPositivi,len(testSet)))
-	print("HMAP veri negativo {0} of {1}".format(hMAPveriNegativi,len(testSet)))
-	print("HMAP sensitivita {0}".format(hMAPveriPositivi/(hMAPveriPositivi+hMAPfalsiNegativi)))
-	print("HMAP specificita {0}".format(hMAPveriNegativi/(hMAPfalsiPositivi+hMAPveriNegativi)))
+	if GLOBAL_verbose:
+		print("HMAP prediction accuracy {0} %".format(hMAPPrediction))
+		print("HMAP falsi positivi {0} of {1}".format(hMAPfalsiPositivi,len(testSet)))
+		print("HMAP falsi negativi {0} of {1}".format(hMAPfalsiNegativi,len(testSet)))
+		print("HMAP veri positivi {0} of {1}".format(hMAPveriPositivi,len(testSet)))
+		print("HMAP veri negativo {0} of {1}".format(hMAPveriNegativi,len(testSet)))
+		print("HMAP sensitivita {0}".format(hMAPveriPositivi/(hMAPveriPositivi+hMAPfalsiNegativi)))
+		print("HMAP specificita {0}".format(hMAPveriNegativi/(hMAPfalsiPositivi+hMAPveriNegativi)))
 
 	#	ML
 	#	ML = max [ P(attribute = value|Result=1) , P(attribute = value|Result=-1) ] 
@@ -197,30 +199,37 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	MLPrediction=VerifyPrediction(testSet,predictionDict)
 	MLfalsiPositivi,MLfalsiNegativi,MLveriPositivi,MLveriNegativi = GetTypeError(testSet,predictionDict)
 
-	print("ML prediction accuracy {0} %".format(MLPrediction))
-	print("ML falsi positivi {0} of {1}".format(MLfalsiPositivi,len(testSet)))
-	print("ML falsi negativi {0} of {1}".format(MLfalsiNegativi,len(testSet)))
-	print("ML veri positivi {0} of {1}".format(MLveriPositivi,len(testSet)))
-	print("ML veri negativo {0} of {1}".format(MLveriNegativi,len(testSet)))
-	print("ML sensitivita {0}".format(MLveriPositivi/(MLveriPositivi+MLfalsiNegativi)))
-	print("ML specificita {0}".format(MLveriNegativi/(MLfalsiPositivi+MLveriNegativi)))
+	if GLOBAL_verbose:
+		print("ML prediction accuracy {0} %".format(MLPrediction))
+		print("ML falsi positivi {0} of {1}".format(MLfalsiPositivi,len(testSet)))
+		print("ML falsi negativi {0} of {1}".format(MLfalsiNegativi,len(testSet)))
+		print("ML veri positivi {0} of {1}".format(MLveriPositivi,len(testSet)))
+		print("ML veri negativo {0} of {1}".format(MLveriNegativi,len(testSet)))
+		print("ML sensitivita {0}".format(MLveriPositivi/(MLveriPositivi+MLfalsiNegativi)))
+		print("ML specificita {0}".format(MLveriNegativi/(MLfalsiPositivi+MLveriNegativi)))
+
 	#	NAIVE
 	#	NAIVE = max = [ (P(attribute = value|Result=1)* P(Result=1)) / P(attribute = value) , (P(attribute = value|Result=-1)* P(Result=-1)) / P(attribute = value) ]
 	predictionDict=Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,"NAIVE",probabilitaPrior)
 	NAIVEPrediction=VerifyPrediction(testSet,predictionDict)
 	NAIVEfalsiPositivi,NAIVEfalsiNegativi,NAIVEveriPositivi,NAIVEveriNegativi = GetTypeError(testSet,predictionDict)
 	
-	print("NAIVE prediction accuracy {0} %".format(NAIVEPrediction))
-	print("NAIVE falsi positivi {0} of {1}".format(NAIVEfalsiPositivi,len(testSet)))
-	print("NAIVE falsi negativi {0} of {1}".format(NAIVEfalsiNegativi,len(testSet)))
-	print("NAIVE veri positivi {0} of {1}".format(NAIVEveriPositivi,len(testSet)))
-	print("NAIVE veri negativo {0} of {1}".format(NAIVEveriNegativi,len(testSet)))
-	print("NAIVE sensitivita {0}".format(NAIVEveriPositivi/(NAIVEveriPositivi+NAIVEfalsiNegativi)))
-	print("NAIVE specificita {0}".format(NAIVEveriNegativi/(NAIVEfalsiPositivi+NAIVEveriNegativi)))
+	if GLOBAL_verbose:
+		print("NAIVE prediction accuracy {0} %".format(NAIVEPrediction))
+		print("NAIVE falsi positivi {0} of {1}".format(NAIVEfalsiPositivi,len(testSet)))
+		print("NAIVE falsi negativi {0} of {1}".format(NAIVEfalsiNegativi,len(testSet)))
+		print("NAIVE veri positivi {0} of {1}".format(NAIVEveriPositivi,len(testSet)))
+		print("NAIVE veri negativo {0} of {1}".format(NAIVEveriNegativi,len(testSet)))
+		print("NAIVE sensitivita {0}".format(NAIVEveriPositivi/(NAIVEveriPositivi+NAIVEfalsiNegativi)))
+		print("NAIVE specificita {0}".format(NAIVEveriNegativi/(NAIVEfalsiPositivi+NAIVEveriNegativi)))
 	return hMAPPrediction,MLPrediction,NAIVEPrediction
 
 
+global GLOBAL_verbose
+GLOBAL_verbose= False
+
 def main():
+	start_time = time.time()
 	filename="phi.arff"
 	doShuffle = True
 	kFoldSize=10
@@ -261,13 +270,13 @@ def main():
 		#splitRatioS=[]
 		#split dataSet to training set and test set
 		for index,splitRatio in enumerate(splitRatioS):
-			print("Index {0} split ration {1}".format(index,splitRatio))
+			if GLOBAL_verbose: print("Index {0} split ration {1}".format(index,splitRatio))
 			trainingSet, testSet = SubSamplingSplit(dataSet,splitRatio)
 			hMAPPrediction,MLPrediction,NAIVEPrediction = BayesianClassifier(trainingSet,testSet,attrValues)
 			hMAPsubsampling+=hMAPPrediction
 			MLsubsampling+=MLPrediction
 			NAIVEsubsampling+=NAIVEPrediction
-			print("--------------")
+			if GLOBAL_verbose: print("--------------")
 	
 		print("HMAP - subsampling avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
 		print("ML   - subsampling avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
@@ -280,7 +289,7 @@ def main():
 	if doKFolding:
 		folds=KFoldSplit(dataSet,kFoldSize)	
 		for index,fold in enumerate(folds):
-			print("Index {0} split K-Fold {1}".format(index,kFoldSize))
+			if GLOBAL_verbose: print("Index {0} split K-Fold {1}".format(index,kFoldSize))
 			testSet = fold
 			copy = folds[:]
 			del copy[index]
@@ -289,10 +298,12 @@ def main():
 			hMAPfold+=hMAPPrediction
 			MLfold+=MLPrediction
 			NAIVEfold+=NAIVEPrediction
-			print("--------------")
+			if GLOBAL_verbose: print("--------------")
 
 		print("HMAP - k-folding avarage: {0} %".format(hMAPfold/float(kFoldSize)))
 		print("ML   - k-folding avarage: {0} %".format(MLfold/float(kFoldSize)))
 		print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
+
+	print("--- %s seconds ---" % (time.time() - start_time))
 
 main()

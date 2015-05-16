@@ -60,10 +60,10 @@ class Model:
                                     
 
 def main():
-            model = Model("bankDataset.arff") #csv tp arff: http://ikuz.eu/csv2arff/
+            model = Model("phi.arff") #csv tp arff: http://ikuz.eu/csv2arff/
             model.GetValues()
             model.TrainClassifier() #TODO: maybe split the dataset?
-            model.TestClassifier("bankDataset.arff")
+            model.TestClassifier("phi.arff")
             print("Falsi negativi: {0} su {1} percentuale: {2}".format(str(model.falsoPositivo),str(len(model.featureVectors)),(model.falsoPositivo/float(len(model.featureVectors))*100)))
             print("Falsi negativi: {0} su {1} percentuale: {2}".format(str(model.falsoNegativo),str(len(model.featureVectors)),(model.falsoNegativo/float(len(model.featureVectors))*100)))
             print("Accuratezza: {0}%".format((model.corrects/float(len(model.featureVectors)))*100))
