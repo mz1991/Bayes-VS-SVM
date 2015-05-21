@@ -6,6 +6,7 @@ import itertools
 import random
 import collections
 import time
+import operator
 
 def GetAttributeValues(file):
 	attrValues=collections.OrderedDict()
@@ -48,7 +49,8 @@ def Learn(attributeClass,dataSet,columnIndex,resultType,attributeName,probabilit
 			if (line == valueClass):
 				totForClass+=1
 		#print("P("+attributeName+"="+valueClass+"|"+"Result="+resultType+")="+str(totForClass/totLine))
-		probabilitaResult[attributeName+"="+valueClass] = totForClass/totLine
+		#probabilitaResult[attributeName+"="+valueClass] = totForClass/totLine
+		probabilitaResult[attributeName+"="+valueClass] = totForClass/float(totLine)
 
 
 def SubSamplingSplit(dataset,splitRatio):
@@ -87,9 +89,9 @@ def Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,typ
 			denNaive=1
 			for index,columnHeader in enumerate(attrValuesCopy):
 				denNaive*= prior[columnHeader+"="+newLine[index]]
-			sum = probMenoUno+probUno
-			probMenoUno = (probMenoUno*prior["Result=-1"]) / sum
-			probUno = (probUno*prior["Result=1"]) / sum
+			sum = 1
+			probMenoUno = (probMenoUno*prior["Result=-1"]) / float(sum)
+			probUno = (probUno*prior["Result=1"]) / float(sum)
 		if (probMenoUno+probUno)!=0:
 			alfa =1/(probMenoUno+probUno)
 		else:
@@ -113,7 +115,7 @@ def GetPrior(attributeClass,dataSet,columnIndex,attributeName,probabilitaResult)
 			if (line == valueClass):
 				totForClass+=1
 		#print("P("+attributeName+"="+valueClass+"="+str(totForClass/totLine))
-		probabilitaResult[attributeName+"="+valueClass] = totForClass/totLine
+		probabilitaResult[attributeName+"="+valueClass] = totForClass/float(totLine)
 
 def VerifyPrediction(testSet,predictionDict):
 	predictionRight=0
@@ -229,14 +231,18 @@ global GLOBAL_verbose
 GLOBAL_verbose= False
 
 def main():
+
 	start_time = time.time()
 	filename="phi.arff"
 	doShuffle = True
 	kFoldSize=10
 	
+	# numero di migliori colonne su cui fare train (max 30!!!)
+	sizeColumnsToKeep=30
+	useLibrary=True
 	doSubSampling = True
 	doKFolding = True	
-
+	
 	file = open(filename, 'r')
 	
 	# return the dataset line and the attributes dictionary (value and classes)
@@ -250,17 +256,70 @@ def main():
 	if doShuffle:
 		random.shuffle(dataSet)
 
+	if useLibrary:
+		from sklearn import metrics
+		from sklearn.ensemble import ExtraTreesClassifier
+		from sklearn import svm
+
+		dataCopy = list()
+		for line_aa in dataSet:
+			dataCopy.append(line_aa[0:-1])
+	
+		lastColumn = list(zip(*dataSet))[-1]
+
+		model = ExtraTreesClassifier(n_estimators=100,criterion='entropy')
+		model.fit(dataCopy, lastColumn)
+
+		clf = svm.SVC()
+		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=True)
+		clf.fit(dataCopy,lastColumn)
+		valoriGiusti=0
+		for indexAA,a in enumerate(dataCopy):
+			predizioneSVC= clf.predict(a)[0]
+			valoreReale =lastColumn[indexAA]
+			#print(predizioneSVC)
+			#print(str(valoreReale))
+			if (str(predizioneSVC) == str(valoreReale)):
+				valoriGiusti +=1
+		#print(valoriGiusti)
+		print("Accuratezza: {0}".format(valoriGiusti/float(len(dataCopy))))
+		##display the relative importance of each attribute
+		#print(model.feature_importances_)	
+
+		featureWeight = model.feature_importances_
+		bestIndex=list()
+		for i in xrange(0,sizeColumnsToKeep):
+			index, value = max(enumerate(featureWeight), key=operator.itemgetter(1))
+			#print(index)
+			#print(value)
+			bestIndex.append(index)
+			featureWeight[index]=-1
+
+		def diff(a, b):
+			b = set(b)
+			return [aa for aa in a if aa not in b]
+	
+		allIndexes = range(0,30)
+
+		print("Column to keep")
+		for i in bestIndex:
+			print(columnHeader[i])
+
+		attributeToRemove=diff(allIndexes,bestIndex)
+
 	#indice attributi da rimuovere nel dataset (viene rimossa l'intera colonna)
-	attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
+	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
+	#attributeToRemove=[0, 3, 5, 6, 7, 9, 10, 13, 16, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29]
+
 	for dataSetRow in dataSet:
 		for index,attIndex in enumerate(attributeToRemove):
 			# rimuovo attrIndex - index per evitare outOf Bound exception
 			del dataSetRow[attIndex-index]
 	#rimuovere anche gli attributi (header delle colonne)
 	for index,idx in enumerate(attributeToRemove):
-		del attrValues[columnHeader[index]]
+		print("Header column removed: {0}".format(columnHeader[idx]))
+		del attrValues[columnHeader[idx]]
 	
-
 	if doSubSampling:
 		hMAPsubsampling = 0
 		MLsubsampling = 0
@@ -280,7 +339,7 @@ def main():
 	
 		print("HMAP - subsampling avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
 		print("ML   - subsampling avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
-		print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
+		#print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
 
 	hMAPfold = 0
 	MLfold = 0
@@ -302,7 +361,7 @@ def main():
 
 		print("HMAP - k-folding avarage: {0} %".format(hMAPfold/float(kFoldSize)))
 		print("ML   - k-folding avarage: {0} %".format(MLfold/float(kFoldSize)))
-		print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
+		#print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
 
 	print("--- %s seconds ---" % (time.time() - start_time))
 
