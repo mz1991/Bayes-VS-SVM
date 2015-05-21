@@ -7,6 +7,11 @@ import random
 import collections
 import time
 import operator
+# import librerie machine learning
+from sklearn import metrics
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn import svm
+import matplotlib.pyplot as plt
 
 def GetAttributeValues(file):
 	attrValues=collections.OrderedDict()
@@ -227,20 +232,26 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 	return hMAPPrediction,MLPrediction,NAIVEPrediction
 
 
-global GLOBAL_verbose
-GLOBAL_verbose= False
+def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30):
 
-def main():
+	# print parameters
+	print("Filename: {0} | Cross Validation Size: {1} | Numer of feature selected: {2}".format(filename,kFoldSize,sizeColumnsToKeep))
+	GLOBAL_asseX.append(sizeColumnsToKeep)
 
+	# start timer (gestione calcolo tempo di esecuzione)
 	start_time = time.time()
-	filename="phi.arff"
-	doShuffle = True
-	kFoldSize=10
-	
+
+	#filename="phi.arff"
+	#doShuffle = True
+	#kFoldSize=10
 	# numero di migliori colonne su cui fare train (max 30!!!)
-	sizeColumnsToKeep=28
+	#sizeColumnsToKeep=28
+
+	# parametri di Debug
 	useLibrary=True
+	# Esegui divisione training set e learning set in modo casuale
 	doSubSampling = True
+	# Esegui cross - validation
 	doKFolding = True	
 	
 	file = open(filename, 'r')
@@ -252,24 +263,25 @@ def main():
 	for header in attrValues:
 		columnHeader.append(header)	
 
-	# mischia il dataset
+	# randomizza il dataset
 	if doShuffle:
 		random.shuffle(dataSet)
 
 	if useLibrary:
-		from sklearn import metrics
-		from sklearn.ensemble import ExtraTreesClassifier
-		from sklearn import svm
-
+		# Crea dati per la feature selection
+		# Prende tutto il dataset esclusa la colonna target (ultima colonna)
 		dataCopy = list()
 		for line_aa in dataSet:
 			dataCopy.append(line_aa[0:-1])
-	
+		
+		# colonna target
 		lastColumn = list(zip(*dataSet))[-1]
 
+		# Feature selection : http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html
 		model = ExtraTreesClassifier(n_estimators=100,criterion='entropy')
 		model.fit(dataCopy, lastColumn)
-
+		
+		# Recupera gli indici delle feature migliori
 		featureWeight = model.feature_importances_
 		bestIndex=list()
 		for i in xrange(0,sizeColumnsToKeep):
@@ -285,35 +297,32 @@ def main():
 	
 		allIndexes = range(0,30)
 
-		print("Column to keep")
+		if GLOBAL_verbose: print("Column to keep")
 		for i in bestIndex:
-			print(columnHeader[i])
+			if GLOBAL_verbose: print(columnHeader[i])
 
+		# Indici colonne da rimuovere
 		attributeToRemove=diff(allIndexes,bestIndex)
-
+		
+		# SUpport Vector Machine
 		clf = svm.SVC()
-		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=True)
+		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=False)
 		for dataSetRowCopy in dataCopy:
 			for index,attIndex in enumerate(attributeToRemove):
 				# rimuovo attrIndex - index per evitare outOf Bound exception
 				del dataSetRowCopy[attIndex-index]
+		# Training
 		clf.fit(dataCopy,lastColumn)
 		valoriGiusti=0
 		for indexAA,a in enumerate(dataCopy):
+			# Predizione
 			predizioneSVC= clf.predict(a)[0]
+			# Verifica predizione
 			valoreReale =lastColumn[indexAA]
-			#print(predizioneSVC)
-			#print(str(valoreReale))
 			if (str(predizioneSVC) == str(valoreReale)):
 				valoriGiusti +=1
-		#print(valoriGiusti)
-		#print("Accuratezza: {0}".format(valoriGiusti/float(len(dataCopy))))
-		##display the relative importance of each attribute
-		#print(model.feature_importances_)	
-
-	#indice attributi da rimuovere nel dataset (viene rimossa l'intera colonna)
+		
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
-	#attributeToRemove=[0, 3, 5, 6, 7, 9, 10, 13, 16, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29]
 
 	for dataSetRow in dataSet:
 		for index,attIndex in enumerate(attributeToRemove):
@@ -321,7 +330,7 @@ def main():
 			del dataSetRow[attIndex-index]
 	#rimuovere anche gli attributi (header delle colonne)
 	for index,idx in enumerate(attributeToRemove):
-		print("Header column removed: {0}".format(columnHeader[idx]))
+		if GLOBAL_verbose: print("Header column removed: {0}".format(columnHeader[idx]))
 		del attrValues[columnHeader[idx]]
 	
 	if doSubSampling:
@@ -329,8 +338,7 @@ def main():
 		MLsubsampling = 0
 		NAIVEsubsampling = 0
 	
-		splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
-		#splitRatioS=[]
+		#splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
 		#split dataSet to training set and test set
 		for index,splitRatio in enumerate(splitRatioS):
 			if GLOBAL_verbose: print("Index {0} split ration {1}".format(index,splitRatio))
@@ -340,7 +348,9 @@ def main():
 			MLsubsampling+=MLPrediction
 			NAIVEsubsampling+=NAIVEPrediction
 			if GLOBAL_verbose: print("--------------")
-	
+		
+		GLOBAL_asseY_MAP_SUB.append(hMAPsubsampling/float(len(splitRatioS)))
+		GLOBAL_asseY_ML_SUB.append(MLsubsampling/float(len(splitRatioS)))
 		print("HMAP - subsampling accuracy avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
 		print("ML   - subsampling accuracy avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
 		#print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
@@ -363,12 +373,91 @@ def main():
 			NAIVEfold+=NAIVEPrediction
 			if GLOBAL_verbose: print("--------------")
 
+		GLOBAL_asseY_MAP_KFOL.append(hMAPfold/float(kFoldSize))
+		GLOBAL_asseY_ML_KFOL.append(MLfold/float(kFoldSize))
 		print("HMAP - k-folding accuracy avarage: {0} %".format(hMAPfold/float(kFoldSize)))
 		print("ML   - k-folding accuracy avarage: {0} %".format(MLfold/float(kFoldSize)))
 		#print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
-		print("------------------------")
-		print("SVM	- accuracy: {0}".format((valoriGiusti/float(len(dataCopy)))*100))
 
+	GLOBAL_asseY_SVM.append(valoriGiusti/float(len(dataCopy))*100)
+	print("SVM	- accuracy: {0}".format((valoriGiusti/float(len(dataCopy)))*100))
+	print("------------------------")
 	print("--- %s seconds ---" % (time.time() - start_time))
 
-main()
+
+global GLOBAL_verbose
+GLOBAL_verbose= False
+
+global GLOBAL_asseX
+GLOBAL_asseX= []
+
+global GLOBAL_asseY_MAP_SUB
+GLOBAL_asseY_MAP_SUB= []
+
+global GLOBAL_asseY_MAP_KFOL
+GLOBAL_asseY_MAP_KFOL= []
+
+global GLOBAL_asseY_ML_SUB
+GLOBAL_asseY_ML_SUB= []
+
+global GLOBAL_asseY_ML_KFOL
+GLOBAL_asseY_ML_KFOL= []
+
+global GLOBAL_asseY_SVM
+GLOBAL_asseY_SVM= []
+
+#TODO: add falsi positivi ecc
+
+## Parameters array
+
+# number of tests! (30)
+sizeColumnsToKeepArray = list(range(1,31))
+for x in range(0, 30):
+	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x])
+
+
+# Test LINE!
+
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=1)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=2)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=3)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=4)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=5)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=6)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=7)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=8)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=9)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=10)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=11)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=12)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=13)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=14)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=15)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=16)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=17)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=18)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=19)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=20)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=21)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=22)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=23)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=24)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=25)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=26)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=27)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=28)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=29)
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=30)
+
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAP_SUB)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_ML_SUB)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAP_KFOL)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_ML_KFOL)
+plt.legend(['Support Vector Machine', 'HMAP Subsampling', 'ML Subsampling', 'HMAP Cross Validation','ML Cross Validation'], loc='lower right')
+plt.ylabel('Accuracy %')
+plt.xlabel('Number of features')
+# set asse x interval ( 1 step )
+plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
+plt.yticks(range(88, 98, 2))
+plt.show()
