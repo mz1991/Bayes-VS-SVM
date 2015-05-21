@@ -238,7 +238,7 @@ def main():
 	kFoldSize=10
 	
 	# numero di migliori colonne su cui fare train (max 30!!!)
-	sizeColumnsToKeep=30
+	sizeColumnsToKeep=28
 	useLibrary=True
 	doSubSampling = True
 	doKFolding = True	
@@ -270,22 +270,6 @@ def main():
 		model = ExtraTreesClassifier(n_estimators=100,criterion='entropy')
 		model.fit(dataCopy, lastColumn)
 
-		clf = svm.SVC()
-		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=True)
-		clf.fit(dataCopy,lastColumn)
-		valoriGiusti=0
-		for indexAA,a in enumerate(dataCopy):
-			predizioneSVC= clf.predict(a)[0]
-			valoreReale =lastColumn[indexAA]
-			#print(predizioneSVC)
-			#print(str(valoreReale))
-			if (str(predizioneSVC) == str(valoreReale)):
-				valoriGiusti +=1
-		#print(valoriGiusti)
-		print("Accuratezza: {0}".format(valoriGiusti/float(len(dataCopy))))
-		##display the relative importance of each attribute
-		#print(model.feature_importances_)	
-
 		featureWeight = model.feature_importances_
 		bestIndex=list()
 		for i in xrange(0,sizeColumnsToKeep):
@@ -306,6 +290,26 @@ def main():
 			print(columnHeader[i])
 
 		attributeToRemove=diff(allIndexes,bestIndex)
+
+		clf = svm.SVC()
+		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=True)
+		for dataSetRowCopy in dataCopy:
+			for index,attIndex in enumerate(attributeToRemove):
+				# rimuovo attrIndex - index per evitare outOf Bound exception
+				del dataSetRowCopy[attIndex-index]
+		clf.fit(dataCopy,lastColumn)
+		valoriGiusti=0
+		for indexAA,a in enumerate(dataCopy):
+			predizioneSVC= clf.predict(a)[0]
+			valoreReale =lastColumn[indexAA]
+			#print(predizioneSVC)
+			#print(str(valoreReale))
+			if (str(predizioneSVC) == str(valoreReale)):
+				valoriGiusti +=1
+		#print(valoriGiusti)
+		#print("Accuratezza: {0}".format(valoriGiusti/float(len(dataCopy))))
+		##display the relative importance of each attribute
+		#print(model.feature_importances_)	
 
 	#indice attributi da rimuovere nel dataset (viene rimossa l'intera colonna)
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
@@ -337,8 +341,8 @@ def main():
 			NAIVEsubsampling+=NAIVEPrediction
 			if GLOBAL_verbose: print("--------------")
 	
-		print("HMAP - subsampling avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
-		print("ML   - subsampling avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
+		print("HMAP - subsampling accuracy avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
+		print("ML   - subsampling accuracy avarage: {0} %".format(MLsubsampling/float(len(splitRatioS))))
 		#print("NAIVE- subsampling avarage: {0} %".format(NAIVEsubsampling/float(len(splitRatioS))))
 
 	hMAPfold = 0
@@ -359,9 +363,11 @@ def main():
 			NAIVEfold+=NAIVEPrediction
 			if GLOBAL_verbose: print("--------------")
 
-		print("HMAP - k-folding avarage: {0} %".format(hMAPfold/float(kFoldSize)))
-		print("ML   - k-folding avarage: {0} %".format(MLfold/float(kFoldSize)))
+		print("HMAP - k-folding accuracy avarage: {0} %".format(hMAPfold/float(kFoldSize)))
+		print("ML   - k-folding accuracy avarage: {0} %".format(MLfold/float(kFoldSize)))
 		#print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
+		print("------------------------")
+		print("SVM	- accuracy: {0}".format((valoriGiusti/float(len(dataCopy)))*100))
 
 	print("--- %s seconds ---" % (time.time() - start_time))
 
