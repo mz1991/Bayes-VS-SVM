@@ -1,4 +1,3 @@
-# Example of Naive Bayes implemented from Scratch in Python
 import csv
 import random
 import math
@@ -7,6 +6,7 @@ import random
 import collections
 import time
 import operator
+import sys
 # import librerie machine learning
 from sklearn import metrics
 from sklearn.ensemble import ExtraTreesClassifier
@@ -318,7 +318,7 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 			rfe = RFE(model, sizeColumnsToKeep)
 			rfe = rfe.fit(dataCopy, lastColumn)
 			#print(rfe.support_)
-			print(rfe.ranking_)
+			#print(rfe.ranking_)
 			bestIndex=list()
 			for index,i in enumerate(rfe.ranking_):
 				if i == 1:
@@ -338,9 +338,10 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 		# Indici colonne da rimuovere
 		attributeToRemove=diff(allIndexes,bestIndex)
 
-		# SUpport Vector Machine
+		# Support Vector Machine
 		clf = svm.SVC()
-		clf = svm.SVC(gamma=0.001, C=100,cache_size=5,kernel='linear',verbose=False)
+		#clf = svm.SVC(gamma=0.001, C=1.0,kernel='poly',verbose=False)
+		clf = svm.SVC(kernel='poly',verbose=False)
 		for dataSetRowCopy in dataCopy:
 			for index,attIndex in enumerate(attributeToRemove):
 				# rimuovo attrIndex - index per evitare outOf Bound exception
@@ -407,6 +408,12 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 		# vn = verinegativi
 		MLsubsampling_vn=0
 
+		MLsub_sensitivita=0
+		MLsub_specificita=0
+
+		hMAPsub_sensitivita=0
+		hMAPsub_specificita=0			
+
 		#splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69]
 		#split dataSet to training set and test set
 		for index,splitRatio in enumerate(splitRatioS):
@@ -425,7 +432,10 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 			MLsubsampling_fn   += dictionaryTypeError["ML_falsinegativi"]
 			MLsubsampling_vp   += dictionaryTypeError["ML_veripositivi"]
 			MLsubsampling_vn   += dictionaryTypeError["ML_verinegativi"]
-
+			MLsub_sensitivita+=dictionaryTypeError["ML_sensitivita"]
+			MLsub_specificita+=dictionaryTypeError["ML_specificita"]
+			hMAPsub_sensitivita+=dictionaryTypeError["HMAP_sensitivita"]
+			hMAPsub_specificita+=dictionaryTypeError["HMAP_specificita"]
 
 			if GLOBAL_verbose: print("--------------")
 		
@@ -441,6 +451,12 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 		GLOBAL_asseY_MLsub_fn.append(MLsubsampling_fn/float(len(splitRatioS)))
 		GLOBAL_asseY_MLsub_vp.append(MLsubsampling_vp/float(len(splitRatioS)))
 		GLOBAL_asseY_MLsub_vn.append(MLsubsampling_vn/float(len(splitRatioS)))
+
+		GLOBAL_asseY_MLsub_Sensitivita.append(MLsub_sensitivita/float(kFoldSize))
+		GLOBAL_asseY_MLsub_Specificita.append(MLsub_specificita/float(kFoldSize))
+		GLOBAL_asseY_MAPsub_Sensitivita.append(hMAPsub_sensitivita/float(kFoldSize))
+		GLOBAL_asseY_MAPsub_Specificita.append(hMAPsub_specificita/float(kFoldSize))	
+	
 
 		print("HMAP - subsampling accuracy avarage: {0} %".format(hMAPsubsampling/float(len(splitRatioS))))
 		print("HMAP - subsampling falsi positivi: {0} %".format(hMAPsubsampling_fp/float(len(splitRatioS))))
@@ -469,6 +485,9 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 	# vn = verinegativi
 	hMAPfold_vn=0
 
+	hMAPfold_sensitivita=0
+	hMAPfold_specificita=0
+
 	# fp = falsipositivi
 	MLfold_fp=0
 	# fn = falsinegativi
@@ -478,6 +497,9 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 	# vn = verinegativi
 	MLfold_vn=0
 
+	MLfold_sensitivita=0
+	MLfold_specificita=0
+	
 	if doKFolding:
 		folds=KFoldSplit(dataSet,kFoldSize)	
 		for index,fold in enumerate(folds):
@@ -495,27 +517,35 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 			hMAPfold_fn += dictionaryTypeError["HMAP_falsinegativi"]
 			hMAPfold_vp += dictionaryTypeError["HMAP_veripositivi"]
 			hMAPfold_vn += dictionaryTypeError["HMAP_verinegativi"]	
+			hMAPfold_specificita += dictionaryTypeError["HMAP_specificita"]
+			hMAPfold_sensitivita += dictionaryTypeError["HMAP_sensitivita"]
 			MLfold_fp   += dictionaryTypeError["ML_falsipositivi"]
 			MLfold_fn   += dictionaryTypeError["ML_falsinegativi"]
 			MLfold_vp   += dictionaryTypeError["ML_veripositivi"]
 			MLfold_vn   += dictionaryTypeError["ML_verinegativi"]
-
+			MLfold_sensitivita += dictionaryTypeError["ML_sensitivita"]
+			MLfold_specificita += dictionaryTypeError["ML_specificita"]
 			
 			if GLOBAL_verbose: print("--------------")
 
 		GLOBAL_asseY_MAP_KFOL.append(hMAPfold/float(kFoldSize))
 		GLOBAL_asseY_ML_KFOL.append(MLfold/float(kFoldSize))
 
-		GLOBAL_asseY_MAPfold_fp.append(hMAPfold_fp/float(len(splitRatioS)))
-		GLOBAL_asseY_MAPfold_fn.append(hMAPfold_fn/float(len(splitRatioS)))
-		GLOBAL_asseY_MAPfold_vp.append(hMAPfold_vp/float(len(splitRatioS)))
-		GLOBAL_asseY_MAPfold_vn.append(hMAPfold_vn/float(len(splitRatioS)))
+		GLOBAL_asseY_MAPfold_fp.append(hMAPfold_fp/float(kFoldSize))
+		GLOBAL_asseY_MAPfold_fn.append(hMAPfold_fn/float(kFoldSize))
+		GLOBAL_asseY_MAPfold_vp.append(hMAPfold_vp/float(kFoldSize))
+		GLOBAL_asseY_MAPfold_vn.append(hMAPfold_vn/float(kFoldSize))
 
-		GLOBAL_asseY_MLfold_fp.append(MLfold_fp/float(len(splitRatioS)))
-		GLOBAL_asseY_MLfold_fn.append(MLfold_fn/float(len(splitRatioS)))
-		GLOBAL_asseY_MLfold_vp.append(MLfold_vp/float(len(splitRatioS)))
-		GLOBAL_asseY_MLfold_vn.append(MLfold_vn/float(len(splitRatioS)))
+		GLOBAL_asseY_MLfold_fp.append(MLfold_fp/float(kFoldSize))
+		GLOBAL_asseY_MLfold_fn.append(MLfold_fn/float(kFoldSize))
+		GLOBAL_asseY_MLfold_vp.append(MLfold_vp/float(kFoldSize))
+		GLOBAL_asseY_MLfold_vn.append(MLfold_vn/float(kFoldSize))
 		
+		GLOBAL_asseY_MLfold_Sensitivita.append(MLfold_sensitivita/float(kFoldSize))
+		GLOBAL_asseY_MLfold_Specificita.append(MLfold_specificita/float(kFoldSize))
+		GLOBAL_asseY_MAPfold_Sensitivita.append(hMAPfold_sensitivita/float(kFoldSize))
+		GLOBAL_asseY_MAPfold_Specificita.append(hMAPfold_specificita/float(kFoldSize))	
+	
 		print("HMAP - k-folding accuracy avarage: {0} %".format(hMAPfold/float(kFoldSize)))
 		
 		print("HMAP - fold falsi positivi: {0} %".format(hMAPfold_fp/float(len(splitRatioS))))
@@ -535,6 +565,9 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 	GLOBAL_asseY_SVM_fn.append(falsiNegativiSVM/float(lenDataCopySVM)*100)
 	GLOBAL_asseY_SVM_vp.append(veriPositiviSVM/float(lenDataCopySVM)*100)
 	GLOBAL_asseY_SVM_vn.append(veriNegativiSVM/float(lenDataCopySVM)*100)
+
+	GLOBAL_asseY_SVM_Sensitivita.append(veriPositiviSVM/(float(veriPositiviSVM+falsiNegativiSVM)))
+	GLOBAL_asseY_SVM_Specificita.append(veriNegativiSVM/(float(falsiPositiviSVM+veriNegativiSVM)))	
 
 	print("SVM	- accuracy: {0}".format((valoriGiusti/float(len(dataCopy)))*100))
 	print("SVM	- falsi positivi: {0}".format((falsiPositiviSVM/float(lenDataCopySVM))*100))
@@ -626,47 +659,46 @@ GLOBAL_asseY_SVM_vp =[]
 global GLOBAL_asseY_SVM_vn
 GLOBAL_asseY_SVM_vn =[]
 
-global GLOBAL_path_save
-GLOBAL_path_save="/home/pippo/MachineLearning/"
+
+global GLOBAL_asseY_MAPfold_Sensitivita
+GLOBAL_asseY_MAPfold_Sensitivita =[]
+
+
+global GLOBAL_asseY_MAPfold_Specificita
+GLOBAL_asseY_MAPfold_Specificita =[]
+
+
+global GLOBAL_asseY_MAPsub_Sensitivita
+GLOBAL_asseY_MAPsub_Sensitivita =[]
+
+
+global GLOBAL_asseY_MAPsub_Specificita
+GLOBAL_asseY_MAPsub_Specificita =[]
+
+global GLOBAL_asseY_MLfold_Sensitivita
+GLOBAL_asseY_MLfold_Sensitivita =[]
+
+global GLOBAL_asseY_MLfold_Specificita
+GLOBAL_asseY_MLfold_Specificita =[]
+
+global GLOBAL_asseY_MLsub_Sensitivita
+GLOBAL_asseY_MLsub_Sensitivita =[]
+
+global GLOBAL_asseY_MLsub_Specificita
+GLOBAL_asseY_MLsub_Specificita =[]
+
+global GLOBAL_asseY_SVM_Sensitivita
+GLOBAL_asseY_SVM_Sensitivita =[]
+
+global GLOBAL_asseY_SVM_Specificita
+GLOBAL_asseY_SVM_Specificita =[]
 
 ## Parameters array
 
 # number of tests! (30)
 sizeColumnsToKeepArray = list(range(1,31))
-for x in range(0, 10):
-	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
-
-
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=1)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=2)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=3)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=4)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=5)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=6)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=7)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=8)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=9)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=10)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=11)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=12)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=13)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=14)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=15)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=16)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=17)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=18)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=19)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=20)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=21)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=22)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=23)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=24)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=25)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=26)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=27)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=28)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=29)
-#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=30)
+for x in range(0, 30):
+	main(filename='phi.arff',doShuffle=False,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
 fig1 = plt.figure(1)
 fig1.suptitle('Accuracy', fontsize=20)
@@ -683,7 +715,7 @@ plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
 plt.yticks(range(88, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
-plt.savefig(GLOBAL_path_save + "Accuracy - ErrorType")
+plt.savefig("Accuracy - ErrorType")
 
 fig2 = plt.figure(2)
 fig2.suptitle('Subsampling - Error Type', fontsize=20)
@@ -707,7 +739,7 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vp)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
 
-plt.savefig(GLOBAL_path_save + "Subsambpling - ErrorType")
+plt.savefig("Subsambpling - ErrorType")
 
 fig3=plt.figure(3)
 fig3.suptitle('Cross Validation - Error Type', fontsize=20)
@@ -731,7 +763,7 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
-plt.savefig(GLOBAL_path_save + "Cross Validation - ErrorType")
+plt.savefig("Cross Validation - ErrorType")
 
 fig4 = plt.figure(4)
 fig4.suptitle('SVM - Error Type', fontsize=20)
@@ -742,9 +774,57 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_vn)
 plt.legend(['Falsi positivi', 'Falsi Negativi', 'Veri positivi', 'Veri negativi'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
-
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+plt.savefig("SVM - ErrorType")
 
-plt.savefig(GLOBAL_path_save + "SVM - ErrorType")
+
+fig5 = plt.figure(5)
+fig5.suptitle('Sensitivity - Cross Validation', fontsize=20)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPfold_Sensitivita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_Sensitivita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Sensitivita)
+plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
+plt.ylabel('%')
+plt.xlabel('Number of features')
+plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+plt.savefig("Sensitivity CrossValidation")
+
+fig6 = plt.figure(6)
+fig6.suptitle('Sensitivity - Subsampling', fontsize=20)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPsub_Sensitivita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_Sensitivita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Sensitivita)
+plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
+plt.ylabel('%')
+plt.xlabel('Number of features')
+plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+plt.savefig("Sensitivity Subsampling")
+
+fig7 = plt.figure(7)
+fig7.suptitle('Specificity - Subsampling', fontsize=20)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPsub_Specificita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_Specificita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Specificita)
+plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
+plt.ylabel('%')
+plt.xlabel('Number of features')
+plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+plt.savefig("Specificity Subsampling")
+
+fig8 = plt.figure(8)
+fig8.suptitle('Specificity - Cross Validation', fontsize=20)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPfold_Specificita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_Specificita)
+plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Specificita)
+plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
+plt.ylabel('%')
+plt.xlabel('Number of features')
+plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+plt.savefig("Specificity Subsampling")
 
 plt.show()
+
+# run: ipython3 BClassifier.py -pylab
+if (input('Close all windows? [S/N]') == "S"):
+	# close all the Figure Windows
+	plt.close('all')
