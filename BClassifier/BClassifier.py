@@ -715,7 +715,7 @@ plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
 plt.yticks(range(88, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
-plt.savefig("Accuracy - ErrorType")
+plt.savefig("Accuracy",bbox_inches='tight', pad_inches=0)
 
 fig2 = plt.figure(2)
 fig2.suptitle('Subsampling - Error Type', fontsize=20)
@@ -738,8 +738,7 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_fn)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vp)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
-
-plt.savefig("Subsambpling - ErrorType")
+plt.savefig("Subsambpling - ErrorType",bbox_inches='tight', pad_inches=0)
 
 fig3=plt.figure(3)
 fig3.suptitle('Cross Validation - Error Type', fontsize=20)
@@ -763,7 +762,7 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
-plt.savefig("Cross Validation - ErrorType")
+plt.savefig("Cross Validation - ErrorType",bbox_inches='tight', pad_inches=0)
 
 fig4 = plt.figure(4)
 fig4.suptitle('SVM - Error Type', fontsize=20)
@@ -775,7 +774,7 @@ plt.legend(['Falsi positivi', 'Falsi Negativi', 'Veri positivi', 'Veri negativi'
 plt.ylabel('%')
 plt.xlabel('Number of features')
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
-plt.savefig("SVM - ErrorType")
+plt.savefig("SVM - ErrorType",bbox_inches='tight', pad_inches=0)
 
 
 fig5 = plt.figure(5)
@@ -798,7 +797,7 @@ plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
-plt.savefig("Sensitivity Subsampling")
+plt.savefig("Sensitivity Subsampling",bbox_inches='tight', pad_inches=0)
 
 fig7 = plt.figure(7)
 fig7.suptitle('Specificity - Subsampling', fontsize=20)
@@ -809,7 +808,7 @@ plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
-plt.savefig("Specificity Subsampling")
+plt.savefig("Specificity Subsampling",bbox_inches='tight', pad_inches=0)
 
 fig8 = plt.figure(8)
 fig8.suptitle('Specificity - Cross Validation', fontsize=20)
@@ -820,7 +819,7 @@ plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
-plt.savefig("Specificity Subsampling")
+plt.savefig("Specificity CrossValidation",bbox_inches='tight', pad_inches=0)
 
 plt.show()
 
