@@ -1,14 +1,9 @@
-import csv
 import random
-import math
 import itertools
-import random
 import collections
 import time
 import operator
-import sys
 # import librerie machine learning
-from sklearn import metrics
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn import svm
 import matplotlib.pyplot as plt
@@ -99,10 +94,11 @@ def Predict(testSet,probabilitaResultUno,probabilitaResultMenoUno,attrValues,typ
 			sum = 1
 			probMenoUno = (probMenoUno*prior["Result=-1"]) / float(sum)
 			probUno = (probUno*prior["Result=1"]) / float(sum)
-		if (probMenoUno+probUno)!=0:
-			alfa =1/(probMenoUno+probUno)
-		else:
-			alfa=1
+
+		# if (probMenoUno+probUno)!=0:
+		# 	 alfa =1/(probMenoUno+probUno)
+		# else:
+		#	 alfa=1
 
 		#print("Prob che vale -1: "+str(probMenoUno*alfa*100))
 		#print("Prob che vale 1: "+str(probUno*alfa*100))
@@ -251,6 +247,69 @@ def BayesianClassifier(trainingSet,testSet,attrValues):
 		print("NAIVE specificita {0}".format(NAIVEveriNegativi/(NAIVEfalsiPositivi+NAIVEveriNegativi)))
 	return hMAPPrediction,MLPrediction,NAIVEPrediction,dictionaryTypeError
 
+class SVMTestResult:
+	def __init__(self):
+		self.lenDataCopySVM = 0
+		self.valoriGiusti = 0
+		self.falsiPositiviSVM = 0  # ipotesi valida, rifiutata
+		self.falsiNegativiSVM = 0  # ipotesi sbagliata accettata
+		self.veriPositiviSVM = 0	  # ipotesi valida accettata
+		self.veriNegativiSVM = 0	  # ipotesi sbagliata rifiutata
+
+def testWithSVM(kernel, dataCopy, lastColumn):
+	clf = svm.SVC(kernel=kernel, verbose=False)
+ 
+	# Training
+	clf.fit(dataCopy, lastColumn)
+	valoriGiusti=0
+	lenDataCopySVM = len(dataCopy)
+	# check error type
+	falsiPositiviSVM =0	# ipotesi valida, rifiutata
+	falsiNegativiSVM =0	# ipotesi sbagliata accettata
+	veriPositiviSVM  =0	# ipotesi valida accettata
+	veriNegativiSVM  =0	# ipotesi sbagliata rifiutata
+	for indexAA,a in enumerate(dataCopy):
+		# Predizione
+		predizioneSVC= clf.predict(a)[0]
+		# Verifica predizione
+		valoreReale =lastColumn[indexAA]
+		if (str(predizioneSVC) == str(valoreReale)):
+			valoriGiusti +=1
+		
+		if (str(valoreReale)=="1") and (str(predizioneSVC)=="1"):
+			veriNegativiSVM+=1
+		if (str(valoreReale)=="-1") and (str(predizioneSVC)=="-1"):
+			veriPositiviSVM+=1
+		if (str(valoreReale)=="1") and (str(predizioneSVC)=="-1"):
+			falsiPositiviSVM+=1
+		if (str(valoreReale)=="-1") and (str(predizioneSVC)=="1"):
+			falsiNegativiSVM+=1
+	ret = SVMTestResult()
+	ret.lenDataCopySVM = lenDataCopySVM
+	ret.valoriGiusti = valoriGiusti
+	ret.falsiPositiviSVM = falsiPositiviSVM
+	ret.falsiNegativiSVM = falsiNegativiSVM
+	ret.veriPositiviSVM = veriPositiviSVM
+	ret.veriNegativiSVM = veriNegativiSVM
+	return ret
+ 
+def processSVM(svmData, globalData, label, startTime):
+	globalData.asseY.append(svmData.valoriGiusti/float(svmData.lenDataCopySVM)*100)
+	globalData.asseY_fp.append(svmData.falsiPositiviSVM/float(svmData.lenDataCopySVM)*100)
+	globalData.asseY_fn.append(svmData.falsiNegativiSVM/float(svmData.lenDataCopySVM)*100)
+	globalData.asseY_vp.append(svmData.veriPositiviSVM/float(svmData.lenDataCopySVM)*100)
+	globalData.asseY_vn.append(svmData.veriNegativiSVM/float(svmData.lenDataCopySVM)*100)
+
+	globalData.asseY_Sensitivita.append(svmData.veriPositiviSVM/(float(svmData.veriPositiviSVM+svmData.falsiNegativiSVM)))
+	globalData.asseY_Specificita.append(svmData.veriNegativiSVM/(float(svmData.falsiPositiviSVM+svmData.veriNegativiSVM)))	
+
+	print("SVM " + label + " - accuracy: {0}".format((svmData.valoriGiusti/float(svmData.lenDataCopySVM))*100))
+	print("SVM " + label + " - falsi positivi: {0}".format((svmData.falsiPositiviSVM/float(svmData.lenDataCopySVM))*100))
+	print("SVM " + label + " - falsi negativi: {0}".format((svmData.falsiNegativiSVM/float(svmData.lenDataCopySVM))*100))
+	print("SVM " + label + " - veri positivi: {0}".format((svmData.veriPositiviSVM/float(svmData.lenDataCopySVM))*100))
+	print("SVM " + label + " - veri negativi: {0}".format((svmData.veriNegativiSVM/float(svmData.lenDataCopySVM))*100))
+	print("------------------------")
+	print("--- %s seconds ---" % (time.time() - startTime))
 
 def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOfFeatureSelection="TreeClassiffier"):
 
@@ -305,7 +364,7 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 			featureWeight = model.feature_importances_
 
 			bestIndex=list()
-			for i in xrange(0,sizeColumnsToKeep):
+			for i in range(0,sizeColumnsToKeep):
 				index, value = max(enumerate(featureWeight), key=operator.itemgetter(1))
 				#print(index)
 				#print(value)
@@ -337,42 +396,16 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 
 		# Indici colonne da rimuovere
 		attributeToRemove=diff(allIndexes,bestIndex)
-
-		# Support Vector Machine
-		clf = svm.SVC()
-		#clf = svm.SVC(gamma=0.001, C=1.0,kernel='poly',verbose=False)
-		clf = svm.SVC(kernel='poly',verbose=False)
+  
 		for dataSetRowCopy in dataCopy:
 			for index,attIndex in enumerate(attributeToRemove):
 				# rimuovo attrIndex - index per evitare outOf Bound exception
-				del dataSetRowCopy[attIndex-index]
-		# Training
-		clf.fit(dataCopy,lastColumn)
-		valoriGiusti=0
-		lenDataCopySVM = len(dataCopy)
-		# check error type
-		falsiPositiviSVM =0	# ipotesi valida, rifiutata
-		falsiNegativiSVM =0	# ipotesi sbagliata accettata
-		veriPositiviSVM  =0	# ipotesi valida accettata
-		veriNegativiSVM  =0	# ipotesi sbagliata rifiutata
-		for indexAA,a in enumerate(dataCopy):
-			# Predizione
-			predizioneSVC= clf.predict(a)[0]
-			# Verifica predizione
-			valoreReale =lastColumn[indexAA]
-			if (str(predizioneSVC) == str(valoreReale)):
-				valoriGiusti +=1
-			
-			if (str(valoreReale)=="1") and (str(predizioneSVC)=="1"):
-				veriNegativiSVM+=1
-			if (str(valoreReale)=="-1") and (str(predizioneSVC)=="-1"):
-				veriPositiviSVM+=1
-			if (str(valoreReale)=="1") and (str(predizioneSVC)=="-1"):
-				falsiPositiviSVM+=1
-			if (str(valoreReale)=="-1") and (str(predizioneSVC)=="1"):
-				falsiNegativiSVM+=1
-			
-
+				del dataSetRowCopy[attIndex-index]  
+  
+		svmPoly = testWithSVM('poly', dataCopy, lastColumn)
+		svmRbf = testWithSVM('rbf', dataCopy, lastColumn)
+		svmLinear = testWithSVM('linear', dataCopy, lastColumn)
+		svmSigmoid = testWithSVM('sigmoid', dataCopy, lastColumn)
 
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
 
@@ -560,23 +593,20 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 		print("ML   - k-folding accuracy avarage: {0} %".format(MLfold/float(kFoldSize)))
 		#print("NAIVE- k-folding avarage: {0} %".format(NAIVEfold/float(kFoldSize)))
 
-	GLOBAL_asseY_SVM.append(valoriGiusti/float(len(dataCopy))*100)
-	GLOBAL_asseY_SVM_fp.append(falsiPositiviSVM/float(lenDataCopySVM)*100)
-	GLOBAL_asseY_SVM_fn.append(falsiNegativiSVM/float(lenDataCopySVM)*100)
-	GLOBAL_asseY_SVM_vp.append(veriPositiviSVM/float(lenDataCopySVM)*100)
-	GLOBAL_asseY_SVM_vn.append(veriNegativiSVM/float(lenDataCopySVM)*100)
+	processSVM(svmPoly, GLOBAL_SVM_poly_data, 'poly', start_time)
+	processSVM(svmRbf, GLOBAL_SVM_rbf_data, 'rbf ', start_time)
+	processSVM(svmLinear, GLOBAL_SVM_lin_data, 'lin ', start_time)
+	processSVM(svmSigmoid, GLOBAL_SVM_sigm_data, 'sigm', start_time)
 
-	GLOBAL_asseY_SVM_Sensitivita.append(veriPositiviSVM/(float(veriPositiviSVM+falsiNegativiSVM)))
-	GLOBAL_asseY_SVM_Specificita.append(veriNegativiSVM/(float(falsiPositiviSVM+veriNegativiSVM)))	
-
-	print("SVM	- accuracy: {0}".format((valoriGiusti/float(len(dataCopy)))*100))
-	print("SVM	- falsi positivi: {0}".format((falsiPositiviSVM/float(lenDataCopySVM))*100))
-	print("SVM	- falsi negativi: {0}".format((falsiNegativiSVM/float(lenDataCopySVM))*100))
-	print("SVM	- veri positivi: {0}".format((veriPositiviSVM/float(lenDataCopySVM))*100))
-	print("SVM	- veri negativi: {0}".format((veriNegativiSVM/float(lenDataCopySVM))*100))
-	print("------------------------")
-	print("--- %s seconds ---" % (time.time() - start_time))
-
+class SVMGraphData:
+	def __init__(self):
+		self.asseY = []
+		self.asseY_fp = []
+		self.asseY_fn = []
+		self.asseY_vp = []
+		self.asseY_vn = []
+		self.asseY_Sensitivita = []
+		self.asseY_Specificita = []
 
 global GLOBAL_verbose
 GLOBAL_verbose= False
@@ -596,8 +626,14 @@ GLOBAL_asseY_ML_SUB= []
 global GLOBAL_asseY_ML_KFOL
 GLOBAL_asseY_ML_KFOL= []
 
-global GLOBAL_asseY_SVM
-GLOBAL_asseY_SVM= []
+global GLOBAL_SVM_poly_data
+global GLOBAL_SVM_rbf_data
+global GLOBAL_SVM_lin_data
+global GLOBAL_SVM_sigm_data
+GLOBAL_SVM_poly_data = SVMGraphData()
+GLOBAL_SVM_rbf_data = SVMGraphData()
+GLOBAL_SVM_lin_data = SVMGraphData()
+GLOBAL_SVM_sigm_data = SVMGraphData()
 
 global GLOBAL_asseY_MAPsub_fp
 GLOBAL_asseY_MAPsub_fp =[]
@@ -647,18 +683,6 @@ GLOBAL_asseY_MAPfold_vp =[]
 global GLOBAL_asseY_MAPfold_vn
 GLOBAL_asseY_MAPfold_vn =[]
 
-global GLOBAL_asseY_SVM_fp
-GLOBAL_asseY_SVM_fp =[]
-
-global GLOBAL_asseY_SVM_fn
-GLOBAL_asseY_SVM_fn =[]
-
-global GLOBAL_asseY_SVM_vp
-GLOBAL_asseY_SVM_vp =[]
-
-global GLOBAL_asseY_SVM_vn
-GLOBAL_asseY_SVM_vn =[]
-
 
 global GLOBAL_asseY_MAPfold_Sensitivita
 GLOBAL_asseY_MAPfold_Sensitivita =[]
@@ -687,27 +711,24 @@ GLOBAL_asseY_MLsub_Sensitivita =[]
 global GLOBAL_asseY_MLsub_Specificita
 GLOBAL_asseY_MLsub_Specificita =[]
 
-global GLOBAL_asseY_SVM_Sensitivita
-GLOBAL_asseY_SVM_Sensitivita =[]
-
-global GLOBAL_asseY_SVM_Specificita
-GLOBAL_asseY_SVM_Specificita =[]
-
 ## Parameters array
 
 # number of tests! (30)
-sizeColumnsToKeepArray = list(range(1,31))
-for x in range(0, 30):
+sizeColumnsToKeepArray = list(range(1,5))
+for x in range(0, 4):
 	main(filename='phi.arff',doShuffle=False,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
 fig1 = plt.figure(1)
 fig1.suptitle('Accuracy', fontsize=20)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAP_SUB)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_ML_SUB)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAP_KFOL)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_ML_KFOL)
-plt.legend(['Support Vector Machine', 'HMAP Subsampling', 'ML Subsampling', 'HMAP Cross Validation','ML Cross Validation'], loc='center left', bbox_to_anchor=(1, 0.5))
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_poly_data.asseY)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_rbf_data.asseY)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_sigm_data.asseY)
+plt.plot(GLOBAL_asseX, GLOBAL_asseY_MAP_SUB)
+plt.plot(GLOBAL_asseX, GLOBAL_asseY_ML_SUB)
+plt.plot(GLOBAL_asseX, GLOBAL_asseY_MAP_KFOL)
+plt.plot(GLOBAL_asseX, GLOBAL_asseY_ML_KFOL)
+plt.legend(['SVM Polynomial', 'SVM Rbf', 'SVM Linear', 'SVM Sigmoid', 'HMAP Subsampling', 'ML Subsampling', 'HMAP Cross Validation','ML Cross Validation'], loc='center left', bbox_to_anchor=(1, 0.5))
 plt.ylabel('Accuracy %')
 plt.xlabel('Number of features')
 # set asse x interval ( 1 step )
@@ -716,6 +737,9 @@ plt.yticks(range(88, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
 plt.savefig("Accuracy",bbox_inches='tight', pad_inches=0)
+
+# TODO: da qui in poi si fa' riferimento alla SVM lineare
+#       quando si richiede una SVM
 
 fig2 = plt.figure(2)
 fig2.suptitle('Subsampling - Error Type', fontsize=20)
@@ -766,10 +790,10 @@ plt.savefig("Cross Validation - ErrorType",bbox_inches='tight', pad_inches=0)
 
 fig4 = plt.figure(4)
 fig4.suptitle('SVM - Error Type', fontsize=20)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_fp)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_fn)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_vp)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_vn)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_fp)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_fn)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_vp)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_vn)
 plt.legend(['Falsi positivi', 'Falsi Negativi', 'Veri positivi', 'Veri negativi'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
@@ -781,7 +805,7 @@ fig5 = plt.figure(5)
 fig5.suptitle('Sensitivity - Cross Validation', fontsize=20)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPfold_Sensitivita)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_Sensitivita)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Sensitivita)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_Sensitivita)
 plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
@@ -792,7 +816,7 @@ fig6 = plt.figure(6)
 fig6.suptitle('Sensitivity - Subsampling', fontsize=20)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPsub_Sensitivita)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_Sensitivita)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Sensitivita)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_Sensitivita)
 plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
@@ -803,7 +827,7 @@ fig7 = plt.figure(7)
 fig7.suptitle('Specificity - Subsampling', fontsize=20)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPsub_Specificita)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_Specificita)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Specificita)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_Specificita)
 plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
@@ -814,7 +838,7 @@ fig8 = plt.figure(8)
 fig8.suptitle('Specificity - Cross Validation', fontsize=20)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MAPfold_Specificita)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_Specificita)
-plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_Specificita)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY_Specificita)
 plt.legend(['HMAP','ML','SVM'], loc=9, bbox_to_anchor=(0.5, -0.1))
 plt.ylabel('%')
 plt.xlabel('Number of features')
