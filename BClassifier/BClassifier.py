@@ -625,11 +625,15 @@ GLOBAL_asseY_SVM_vp =[]
 
 global GLOBAL_asseY_SVM_vn
 GLOBAL_asseY_SVM_vn =[]
+
+global GLOBAL_path_save
+GLOBAL_path_save="/home/pippo/MachineLearning/"
+
 ## Parameters array
 
 # number of tests! (30)
 sizeColumnsToKeepArray = list(range(1,31))
-for x in range(0, 30):
+for x in range(0, 10):
 	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
 
@@ -679,6 +683,8 @@ plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
 plt.yticks(range(88, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
+plt.savefig(GLOBAL_path_save + "Accuracy - ErrorType")
+
 fig2 = plt.figure(2)
 fig2.suptitle('Subsampling - Error Type', fontsize=20)
 plt.subplot(3,1,1)
@@ -700,6 +706,8 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_fn)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vp)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLsub_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
+
+plt.savefig(GLOBAL_path_save + "Subsambpling - ErrorType")
 
 fig3=plt.figure(3)
 fig3.suptitle('Cross Validation - Error Type', fontsize=20)
@@ -723,6 +731,8 @@ plt.plot(GLOBAL_asseX,GLOBAL_asseY_MLfold_vn)
 plt.legend(['ML - Falsi positivi', 'ML - Falsi Negativi', 'ML - Veri positivi', 'ML - Veri negativi'], loc='center left', bbox_to_anchor=(1,0.5))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
+plt.savefig(GLOBAL_path_save + "Cross Validation - ErrorType")
+
 fig4 = plt.figure(4)
 fig4.suptitle('SVM - Error Type', fontsize=20)
 plt.plot(GLOBAL_asseX,GLOBAL_asseY_SVM_fp)
@@ -734,4 +744,7 @@ plt.ylabel('%')
 plt.xlabel('Number of features')
 
 plt.subplots_adjust(left=None, bottom=0.3, right=None, top=None, wspace=None, hspace=None)
+
+plt.savefig(GLOBAL_path_save + "SVM - ErrorType")
+
 plt.show()
