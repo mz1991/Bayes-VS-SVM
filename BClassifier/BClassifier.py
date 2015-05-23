@@ -257,7 +257,17 @@ class SVMTestResult:
 		self.veriNegativiSVM = 0	  # ipotesi sbagliata rifiutata
 
 def testWithSVM(kernel, dataCopy, lastColumn):
-	clf = svm.SVC(kernel=kernel, verbose=False)
+
+	if kernel == "poly":
+		clf = svm.SVC(kernel=kernel,degree=3,verbose=False)
+	elif kernel == "rbf":
+		clf = svm.SVC(kernel=kernel,verbose=False)
+	elif kernel == "linear":
+		clf = svm.SVC(kernel=kernel, verbose=False)
+	elif kernel == "sigmoid":
+		clf = svm.SVC(kernel=kernel,gamma=1/float(len(dataCopy)),C=100,verbose=False)
+
+	#clf = svm.SVC(kernel=kernel, verbose=False)
  
 	# Training
 	clf.fit(dataCopy, lastColumn)
@@ -714,8 +724,8 @@ GLOBAL_asseY_MLsub_Specificita =[]
 ## Parameters array
 
 # number of tests! (30)
-sizeColumnsToKeepArray = list(range(1,5))
-for x in range(0, 4):
+sizeColumnsToKeepArray = list(range(1,31))
+for x in range(0, 30):
 	main(filename='phi.arff',doShuffle=False,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
 fig1 = plt.figure(1)
