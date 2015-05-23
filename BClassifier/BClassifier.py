@@ -258,14 +258,12 @@ class SVMTestResult:
 
 def testWithSVM(kernel, dataCopy, lastColumn):
 	if (kernel == 'poly'):
-		# riduce il fattore di tolleranze degli errori
-		clf = svm.SVC(kernel='poly', C=0.9, verbose=False)
+		clf = svm.SVC(kernel='poly', C=0.9, degree=3, verbose=False)
 	elif (kernel == 'sigmoid'):
-		# riduce drasticamente il fattore di tolleranza degli errori
-		clf = svm.SVC(kernel='sigmoid', C=1.0, coef0=0.1, verbose=False)
+		clf = svm.SVC(kernel='sigmoid', gamma=1/float(len(dataCopy)), C=100, verbose=False)
 	else:
-          clf = svm.SVC(kernel=kernel, C=1.0, coef0=0.0, verbose=False)
-          
+		clf = svm.SVC(kernel=kernel, C=1.0, coef0=0.0, verbose=False)
+
 	# Training
 	clf.fit(dataCopy, lastColumn)
 	valoriGiusti=0
@@ -412,7 +410,7 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 		svmPoly = testWithSVM('poly', dataCopy, lastColumn)
 		svmRbf = testWithSVM('rbf', dataCopy, lastColumn)
 		svmLinear = testWithSVM('linear', dataCopy, lastColumn)
-		# svmSigmoid = testWithSVM('sigmoid', dataCopy, lastColumn)
+		svmSigmoid = testWithSVM('sigmoid', dataCopy, lastColumn)
 
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
 
@@ -603,7 +601,7 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 	processSVM(svmPoly, GLOBAL_SVM_poly_data, 'poly', start_time)
 	processSVM(svmRbf, GLOBAL_SVM_rbf_data, 'rbf ', start_time)
 	processSVM(svmLinear, GLOBAL_SVM_lin_data, 'lin ', start_time)
-	# processSVM(svmSigmoid, GLOBAL_SVM_sigm_data, 'sigm', start_time)
+	processSVM(svmSigmoid, GLOBAL_SVM_sigm_data, 'sigm', start_time)
 
 class SVMGraphData:
 	def __init__(self):
@@ -636,11 +634,11 @@ GLOBAL_asseY_ML_KFOL= []
 global GLOBAL_SVM_poly_data
 global GLOBAL_SVM_rbf_data
 global GLOBAL_SVM_lin_data
-# global GLOBAL_SVM_sigm_data
+global GLOBAL_SVM_sigm_data
 GLOBAL_SVM_poly_data = SVMGraphData()
 GLOBAL_SVM_rbf_data = SVMGraphData()
 GLOBAL_SVM_lin_data = SVMGraphData()
-# GLOBAL_SVM_sigm_data = SVMGraphData()
+GLOBAL_SVM_sigm_data = SVMGraphData()
 
 global GLOBAL_asseY_MAPsub_fp
 GLOBAL_asseY_MAPsub_fp =[]
@@ -730,12 +728,12 @@ fig1.suptitle('Accuracy', fontsize=20)
 plt.plot(GLOBAL_asseX, GLOBAL_SVM_poly_data.asseY)
 plt.plot(GLOBAL_asseX, GLOBAL_SVM_rbf_data.asseY)
 plt.plot(GLOBAL_asseX, GLOBAL_SVM_lin_data.asseY)
-# plt.plot(GLOBAL_asseX, GLOBAL_SVM_sigm_data.asseY)
+plt.plot(GLOBAL_asseX, GLOBAL_SVM_sigm_data.asseY)
 plt.plot(GLOBAL_asseX, GLOBAL_asseY_MAP_SUB)
 plt.plot(GLOBAL_asseX, GLOBAL_asseY_ML_SUB)
 plt.plot(GLOBAL_asseX, GLOBAL_asseY_MAP_KFOL)
 plt.plot(GLOBAL_asseX, GLOBAL_asseY_ML_KFOL)
-plt.legend(['SVM Polynomial', 'SVM Rbf', 'SVM Linear', 'HMAP Subsampling', 'ML Subsampling', 'HMAP Cross Validation','ML Cross Validation'], loc='center left', bbox_to_anchor=(1, 0.5))
+plt.legend(['SVM Polynomial', 'SVM Rbf', 'SVM Linear', 'SVM Sigmoid', 'HMAP Subsampling', 'ML Subsampling', 'HMAP Cross Validation','ML Cross Validation'], loc='center left', bbox_to_anchor=(1, 0.5))
 plt.ylabel('Accuracy %')
 plt.xlabel('Number of features')
 # set asse x interval ( 1 step )
