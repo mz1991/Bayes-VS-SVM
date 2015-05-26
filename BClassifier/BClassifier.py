@@ -256,16 +256,16 @@ class SVMTestResult:
 		self.veriPositiviSVM = 0	  # ipotesi valida accettata
 		self.veriNegativiSVM = 0	  # ipotesi sbagliata rifiutata
 
-def tryTestWithSVM(kernel, dataCopy,testSetSVM, lastColumnTrainingSet,lastColumnTestSet):
+def testWithSVM(kernel, dataCopy,testSetSVM, lastColumnTrainingSet,lastColumnTestSet):
 	if (kernel == 'poly'):
 		#clf = svm.SVC(kernel='poly', C=0.9, degree=3, verbose=False)
 		clf = svm.SVC(kernel='poly', verbose=False)
 	elif (kernel == 'sigmoid'):
 		#clf = svm.SVC(kernel='sigmoid', gamma=1/float(len(dataCopy)), C=100, verbose=False)
-		clf = svm.SVC(kernel='sigmoid', C=0.1, degree=1, gamma=0.7, coef0=1, verbose=False)
+		clf = svm.SVC(kernel='poly', C=1, degree=20, verbose=False)
 	else:
 		#clf = svm.SVC(kernel=kernel, C=1.0, coef0=0.0, verbose=False)
-		clf = svm.SVC(kernel=kernel, verbose=False)
+		clf = svm.SVC(kernel='poly', C=10000,degree=50,verbose=False)
 
 	# Training
 	clf.fit(dataCopy, lastColumnTrainingSet)
@@ -301,34 +301,6 @@ def tryTestWithSVM(kernel, dataCopy,testSetSVM, lastColumnTrainingSet,lastColumn
 	ret.veriPositiviSVM = veriPositiviSVM
 	ret.veriNegativiSVM = veriNegativiSVM
 	return ret
-
-def testWithSVM(k, c, d, g, c0, trainingSet, testSet, lastColumnTrainingSet, lastColumnTestSet):
-	clf = svm.SVC(kernel=k, C=c, degree=d, gamma=g, coef0=c0, verbose=False)	
-	# Training
-	clf.fit(trainingSet, lastColumnTrainingSet)
-	valoriGiusti=0
-	# check error type
-	falsiPositiviSVM =0	# ipotesi valida, rifiutata
-	falsiNegativiSVM =0	# ipotesi sbagliata accettata
-	veriPositiviSVM  =0	# ipotesi valida accettata
-	veriNegativiSVM  =0	# ipotesi sbagliata rifiutata
-	for i in range(len(testSet)):
-		# Predizione
-		predizioneSVC = clf.predict(testSet[i])[0]
-		# Verifica predizione
-		valoreReale = lastColumnTestSet[i]
-		if (str(predizioneSVC) == str(valoreReale)):
-			valoriGiusti += 1
-		
-		if (str(valoreReale)=="1") and (str(predizioneSVC)=="1"):
-			veriNegativiSVM += 1
-		if (str(valoreReale)=="-1") and (str(predizioneSVC)=="-1"):
-			veriPositiviSVM += 1
-		if (str(valoreReale) == "1") and (str(predizioneSVC)=="-1"):
-			falsiPositiviSVM += 1
-		if (str(valoreReale) == "-1") and (str(predizioneSVC)=="1"):
-			falsiNegativiSVM += 1
-	print('risultati giusti', valoriGiusti, len(testSet), valoriGiusti / len(testSet))
  
 def processSVM(svmData, globalData, label, startTime):
 	globalData.asseY.append(svmData.valoriGiusti/float(svmData.lenDataCopySVM)*100)
@@ -348,12 +320,7 @@ def processSVM(svmData, globalData, label, startTime):
 	print("------------------------")
 	print("--- %s seconds ---" % (time.time() - startTime))
 
-def main(filename,
-         doShuffle,
-         splitRatioS,
-         kFoldSize=10,
-         sizeColumnsToKeep=30,
-         typeOfFeatureSelection="TreeClassiffier"):
+def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOfFeatureSelection="TreeClassiffier"):
 
 	# print parameters
 	print("Filename: {0} | Cross Validation Size: {1} | Numer of feature selected: {2}".format(filename,kFoldSize,sizeColumnsToKeep))
@@ -445,31 +412,15 @@ def main(filename,
 				del dataSetRowCopy[attIndex-index]  
 		
 		# divide dataset in 50% in trainins set e 50% in tests set
-		dcLen = len(dataCopy);
-		dcLenM = int(dcLen / 2)
-		print('lens', dcLen, dcLenM)
-		trainingSetSVM = dataCopy[0:dcLenM]
-		testSetSVM = dataCopy[dcLenM:dcLen]
-		lastColumnTrainingSet = lastColumn[0:dcLenM]
-		lastColumnTestSet = lastColumn[dcLenM:dcLen]
-		print('dataset len', len(trainingSetSVM), len(testSetSVM), len(lastColumnTrainingSet), len(lastColumnTestSet))
+		trainingSetSVM = dataCopy[0:int(len(dataCopy)/2)]
+		testSetSVM = dataCopy[int(len(dataCopy)/2):]
+		lastColumnTrainingSet= lastColumn[0:int(len(lastColumn)/2)]
+		lastColumnTestSet= lastColumn[int(len(lastColumn)/2):]		
 
-		# linear 85%
-		# rbf 85%
-		# poly 85%
-		# sigmoid 85%  C=0.1 degree=1 gamma=0.7 coef0=1
-		#for k in ['sigmoid']:
-		#	for c in [0.1, 0.5, 1.0, 5, 10, 25, 50, 100, 250]:
-		#		for d in [1, 3, 5, 6, 7]:
-		#			for g in [0.1, 0.5, 0.7]:
-		#				for c0 in [1, 5, 15]:
-		#					print('pars', k, c, d, g, c0)
-		#					testWithSVM(k, c, d, g, c0, trainingSetSVM,testSetSVM, lastColumnTrainingSet, lastColumnTestSet)
-
-		svmPoly = tryTestWithSVM('poly', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
-		svmRbf = tryTestWithSVM('rbf', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
-		svmLinear = tryTestWithSVM('linear', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
-		svmSigmoid = tryTestWithSVM('sigmoid', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmPoly = testWithSVM('poly', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmRbf = testWithSVM('rbf', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmLinear = testWithSVM('linear', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmSigmoid = testWithSVM('sigmoid', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
 
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
 
@@ -778,9 +729,8 @@ GLOBAL_asseY_MLsub_Specificita =[]
 ## Parameters array
 
 # number of tests! (30)
-number_of_test = 10 # 30 di default
-sizeColumnsToKeepArray = list(range(1, number_of_test + 1))
-for x in range(0, number_of_test):
+sizeColumnsToKeepArray = list(range(1, 31))
+for x in range(0, 30):
 	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
 #main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=30,typeOfFeatureSelection="RecursiveFeatureElimination")
