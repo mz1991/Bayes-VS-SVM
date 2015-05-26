@@ -256,28 +256,32 @@ class SVMTestResult:
 		self.veriPositiviSVM = 0	  # ipotesi valida accettata
 		self.veriNegativiSVM = 0	  # ipotesi sbagliata rifiutata
 
-def testWithSVM(kernel, dataCopy, lastColumn):
+def testWithSVM(kernel, dataCopy,testSetSVM, lastColumnTrainingSet,lastColumnTestSet):
 	if (kernel == 'poly'):
-		clf = svm.SVC(kernel='poly', C=0.9, degree=3, verbose=False)
+		#clf = svm.SVC(kernel='poly', C=0.9, degree=3, verbose=False)
+		clf = svm.SVC(kernel='poly', verbose=False)
 	elif (kernel == 'sigmoid'):
-		clf = svm.SVC(kernel='sigmoid', gamma=1/float(len(dataCopy)), C=100, verbose=False)
+		#clf = svm.SVC(kernel='sigmoid', gamma=1/float(len(dataCopy)), C=100, verbose=False)
+		clf = svm.SVC(kernel='poly', C=1, degree=20, verbose=False)
 	else:
-		clf = svm.SVC(kernel=kernel, C=1.0, coef0=0.0, verbose=False)
+		#clf = svm.SVC(kernel=kernel, C=1.0, coef0=0.0, verbose=False)
+		clf = svm.SVC(kernel='poly', C=10000,degree=50,verbose=False)
 
 	# Training
-	clf.fit(dataCopy, lastColumn)
+	clf.fit(dataCopy, lastColumnTrainingSet)
+	print(clf)
 	valoriGiusti=0
-	lenDataCopySVM = len(dataCopy)
+	lenDataCopySVM = len(testSetSVM)
 	# check error type
 	falsiPositiviSVM =0	# ipotesi valida, rifiutata
 	falsiNegativiSVM =0	# ipotesi sbagliata accettata
 	veriPositiviSVM  =0	# ipotesi valida accettata
 	veriNegativiSVM  =0	# ipotesi sbagliata rifiutata
-	for indexAA,a in enumerate(dataCopy):
+	for indexAA,a in enumerate(testSetSVM):
 		# Predizione
 		predizioneSVC= clf.predict(a)[0]
 		# Verifica predizione
-		valoreReale =lastColumn[indexAA]
+		valoreReale =lastColumnTestSet[indexAA]
 		if (str(predizioneSVC) == str(valoreReale)):
 			valoriGiusti +=1
 		
@@ -401,16 +405,22 @@ def main(filename,doShuffle,splitRatioS,kFoldSize=10,sizeColumnsToKeep=30,typeOf
 
 		# Indici colonne da rimuovere
 		attributeToRemove=diff(allIndexes,bestIndex)
-  
+
 		for dataSetRowCopy in dataCopy:
 			for index,attIndex in enumerate(attributeToRemove):
 				# rimuovo attrIndex - index per evitare outOf Bound exception
 				del dataSetRowCopy[attIndex-index]  
-  
-		svmPoly = testWithSVM('poly', dataCopy, lastColumn)
-		svmRbf = testWithSVM('rbf', dataCopy, lastColumn)
-		svmLinear = testWithSVM('linear', dataCopy, lastColumn)
-		svmSigmoid = testWithSVM('sigmoid', dataCopy, lastColumn)
+		
+		# divide dataset in 50% in trainins set e 50% in tests set
+		trainingSetSVM = dataCopy[0:int(len(dataCopy)/2)]
+		testSetSVM = dataCopy[int(len(dataCopy)/2):]
+		lastColumnTrainingSet= lastColumn[0:int(len(lastColumn)/2)]
+		lastColumnTestSet= lastColumn[int(len(lastColumn)/2):]		
+
+		svmPoly = testWithSVM('poly', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmRbf = testWithSVM('rbf', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmLinear = testWithSVM('linear', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
+		svmSigmoid = testWithSVM('sigmoid', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
 
 	#attributeToRemove=[0,1,2,3,4,5,6,7,8,9]
 
@@ -721,7 +731,9 @@ GLOBAL_asseY_MLsub_Specificita =[]
 # number of tests! (30)
 sizeColumnsToKeepArray = list(range(1, 31))
 for x in range(0, 30):
-	main(filename='phi.arff',doShuffle=False,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
+	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
+
+#main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=30,typeOfFeatureSelection="RecursiveFeatureElimination")
 
 fig1 = plt.figure(1)
 fig1.suptitle('Accuracy', fontsize=20)
@@ -738,7 +750,7 @@ plt.ylabel('Accuracy %')
 plt.xlabel('Number of features')
 # set asse x interval ( 1 step )
 plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
-plt.yticks(range(88, 98, 2))
+plt.yticks(range(0, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
 plt.savefig("Accuracy",bbox_inches='tight', pad_inches=0)

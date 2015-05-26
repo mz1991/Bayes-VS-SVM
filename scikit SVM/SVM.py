@@ -177,7 +177,8 @@ def main():
         # inizializza clf e lo istruisce
         clf = svm.SVC()
         clf.fit(dataset_X, dataset_y)
-
+        print(clf)
+        
         # un paio di predizioni
         falsePositive = 0;
         falseNegative = 0;
