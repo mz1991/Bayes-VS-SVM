@@ -799,7 +799,7 @@ plt.ylabel('Accuracy %')
 plt.xlabel('Number of features')
 # set asse x interval ( 1 step )
 plt.xticks(range(0, int(max(GLOBAL_asseX))+1, 2))
-plt.yticks(range(0, 98, 2))
+plt.yticks(range(72, 98, 2))
 plt.subplots_adjust(left=None, bottom=None, right=0.75, top=None, wspace=None, hspace=None)
 
 plt.savefig("Accuracy",bbox_inches='tight', pad_inches=0)
