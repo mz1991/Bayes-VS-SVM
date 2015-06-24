@@ -154,6 +154,7 @@ def KFoldSplit(dataset,nFold):
 
 def BayesianClassifier(trainingSet,testSet,attrValues):
 	#data set diviso in Classi (Result = 1 e Result = -1)
+	# suddivide il training set in classi (rispetto alla colonna target!)
 	dataSetClassUno,dataSetClassMenoUno = GetClass(trainingSet)
 
 	#Priorita a priori (utilizzata nel denominatore di Bayes)
@@ -374,8 +375,10 @@ def main(filename,
 	# Esegui cross - validation
 	doKFolding = True	
 	
+	#apre il file
 	file = open(filename, 'r')
 	
+	#fa un split tra attributi e colonna target
 	# return the dataset line and the attributes dictionary (value and classes)
 	attrValues,dataSet=GetAttributeValues(file)
 	
@@ -394,6 +397,8 @@ def main(filename,
 		for line_aa in dataSet:
 			dataCopy.append(line_aa[0:-1])
 		
+		#feature selection (utilizzando il metodo recursivefeatureelimination)
+
 		# colonna target
 		lastColumn = list(zip(*dataSet))[-1]
 		
@@ -464,6 +469,9 @@ def main(filename,
 		#				for c0 in [1, 5, 15]:
 		#					print('pars', k, c, d, g, c0)
 		#					testWithSVM(k, c, d, g, c0, trainingSetSVM,testSetSVM, lastColumnTrainingSet, lastColumnTestSet)
+
+
+		# eseguite il test con SUpport Vector Machine
 
 		svmPoly = tryTestWithSVM('poly', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
 		svmRbf = tryTestWithSVM('rbf', trainingSetSVM,testSetSVM, lastColumnTrainingSet,lastColumnTestSet)
@@ -782,7 +790,17 @@ sizeColumnsToKeepArray = list(range(1, number_of_test + 1))
 for x in range(0, number_of_test):
 	main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=sizeColumnsToKeepArray[x],typeOfFeatureSelection="RecursiveFeatureElimination")
 
+'''
+	Viene eseguito il test con un numero crescente di feature: da 1 a 30 (tutte le feature)
+	PS: feature = attributo
+'''
+
 #main(filename='phi.arff',doShuffle=True,splitRatioS=[0.50,0.60,0.70,0.80,0.75,0.85,0.90,0.65,0.77,0.69],kFoldSize=10,sizeColumnsToKeep=30,typeOfFeatureSelection="RecursiveFeatureElimination")
+
+'''
+	CREAZIONE GRAFICI
+'''
+
 
 fig1 = plt.figure(1)
 fig1.suptitle('Accuracy', fontsize=20)
@@ -913,6 +931,11 @@ plt.savefig("Specificity CrossValidation",bbox_inches='tight', pad_inches=0)
 
 plt.show()
 
+'''
+	END - CREAZIONE GRAFICI
+'''
+
+# Semplicemente chiude tutti i grafici
 # run: ipython3 BClassifier.py -pylab
 if (input('Close all windows? [S/N]') == "S"):
 	# close all the Figure Windows
